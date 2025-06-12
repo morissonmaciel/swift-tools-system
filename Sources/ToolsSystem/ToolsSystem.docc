@@ -1,0 +1,62 @@
+# ``ToolsSystem``
+
+A comprehensive framework for building type-safe, executable tools with Swift macros.
+
+## Overview
+
+ToolsSystem provides a robust foundation for creating executable tools that can be integrated into applications, APIs, or AI systems. The framework emphasizes type safety, ease of use, and comprehensive serialization support.
+
+## Core Concepts
+
+### Tools
+Tools are executable units of functionality that accept structured input and produce typed output. Each tool has metadata describing its purpose and capabilities.
+
+### Arguments
+Arguments provide strongly-typed input data to tools. They can be simple values or complex structures with multiple properties.
+
+### Outputs
+Tool outputs are type-safe results that can represent various data types including strings, numbers, booleans, binary data, and arrays.
+
+## Quick Start
+
+```swift
+import ToolsSystemMacros
+
+@Tool("calculator", "Performs basic math calculations")
+struct Calculator {
+    @ToolArgument("operation", "Math operation to perform")
+    struct MathOperation {
+        let operation: String
+        let left: Double
+        let right: Double
+    }
+    
+    func call(arguments: [Argument]) throws -> ToolOutput {
+        let op = try arguments.decode(MathOperation.self)
+        
+        switch op.operation {
+        case "add":
+            return .double(op.left + op.right)
+        case "multiply":
+            return .double(op.left * op.right)
+        default:
+            return .string("Unknown operation")
+        }
+    }
+}
+```
+
+## Topics
+
+### Essential Protocols
+- ``ToolProtocol``
+- ``ToolArgumentProtocol``
+
+### Core Types
+- ``ToolDefinition``
+- ``ToolArgumentDefinition``
+- ``ToolOutput``
+- ``EmptyArgument``
+
+### Error Handling
+- ``ToolError``

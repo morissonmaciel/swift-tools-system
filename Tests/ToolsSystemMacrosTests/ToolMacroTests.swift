@@ -1,0 +1,38 @@
+//
+//  ToolMacroTests.swift
+//  ToolsSystemMacrosTests
+//
+//  Created by Morisson Marcel on 11/06/25.
+//
+
+import Foundation
+import Testing
+import ToolsSystemMacros
+import ToolsSystem
+
+@Test("Tool macro generates correct definition")
+func testToolMacroDefinition() {
+    let tool = TestTool()
+    let definition = tool.definition
+    
+    #expect(definition.name == "test_tool")
+    #expect(definition.description == "A test tool")
+}
+
+@Test("Tool macro works with different names and descriptions")
+func testToolMacroWithDifferentValues() {
+    let calcTool = CalcSquareRoot()
+    let definition = calcTool.definition
+    
+    #expect(definition.name == "calculate_square_root")
+    #expect(definition.description == "Calculates the square root of a number")
+}
+
+@Test("Tool conforms to ToolProtocol")
+func testToolProtocolConformance() {
+    let tool = TestTool()
+    #expect(tool is any ToolProtocol)
+    
+    let calcTool = CalcSquareRoot()
+    #expect(calcTool is any ToolProtocol)
+}
