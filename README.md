@@ -30,12 +30,15 @@ Add this package to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(path: "path/to/tools-system-macros")
+    .package(url: "https://github.com/morissonmaciel/swift-tools-system,git", branch: "main")
 ],
 targets: [
     .target(
-        name: "YourTarget",
-        dependencies: ["ToolsSystemMacros"]
+        name: "MyTarget",
+        dependencies: [
+            .product(name: "ToolsSystem", package: "swift-tools-system"),
+            .product(name: "ToolsSystemMacros", package: "swift-tools-system")
+        ]
     )
 ]
 ```
