@@ -1,4 +1,4 @@
-# ToolsSystemMacros
+# swift-tools-system
 
 A Swift package providing type-safe, executable tools with macro-based code generation and JSON descriptors.
 
