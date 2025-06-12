@@ -30,7 +30,7 @@ Add this package to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/morissonmaciel/swift-tools-system,git", branch: "main")
+    .package(url: "https://github.com/morissonmaciel/swift-tools-system.git", branch: "main")
 ],
 targets: [
     .target(
