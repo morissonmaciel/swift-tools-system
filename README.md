@@ -161,18 +161,18 @@ struct GreetingTool {
 // Usage
 let tool = GreetingTool()
 let result = try await tool.call(arguments: [])
-print(tool.jsonDescription) // Get JSON descriptor
+print(GreetingTool.jsonDescription) // Get JSON descriptor
 ```
 
 **JSON Descriptor Output:**
 ```json
 {
-  "arguments": [],
+  "tool_name": "greet",
   "description": "Returns a friendly greeting",
-  "name": "greet",
-  "returnType": {
-    "description": "The result of the tool execution",
-    "type": "ToolOutput"
+  "arguments": [],
+  "example": {
+    "tool_name": "greet",
+    "arguments": {}
   }
 }
 ```
@@ -203,6 +203,27 @@ let result = try await calculator.call(arguments: [input])
 
 if case .double(let squared) = result {
     print("5² = \(squared)") // Prints: 5² = 25.0
+}
+```
+
+**JSON Descriptor Output:**
+```json
+{
+  "tool_name": "calculate_square",
+  "description": "Calculates the square of a number",
+  "arguments": [
+    {
+      "name": "number",
+      "description": "The number to square",
+      "type": {
+        "type": "object"
+      }
+    }
+  ],
+  "example": {
+    "tool_name": "calculate_square",
+    "arguments": {}
+  }
 }
 ```
 
@@ -386,24 +407,69 @@ struct FileProcessor {
 
 ## JSON Descriptors
 
-Every tool automatically provides a comprehensive JSON descriptor:
+Every tool automatically provides a comprehensive JSON descriptor with improved structure:
 
 ```swift
-let tool = FileProcessor()
-print(tool.jsonDescription)
+// Access JSON description (static method)
+print(FileProcessor.jsonDescription)
 
 // Access the structured descriptor
-let descriptor = tool.toolDescriptor
-print("Tool name: \(descriptor.name)")
+let descriptor = FileProcessor.toolDescriptor
+print("Tool name: \(descriptor.tool_name)")
 print("Description: \(descriptor.description)")
 print("Arguments count: \(descriptor.arguments.count)")
+print("Example: \(descriptor.example?.tool_name ?? "none")")
+```
+
+**New Improved JSON Structure Features:**
+- **`tool_name`** field for clear tool identification (instead of generic `name`)
+- **Simplified arguments** with `name`, `description`, and `type` fields
+- **Example section** showing sample usage patterns
+- **Type mapping** from Swift types to JSON schema types (`string`, `number`, `boolean`, `object`, `array`)
+- **Static access** - no need to instantiate tools to get descriptors
+- **Clean JSON output** with sorted keys and proper formatting
+
+**Before vs After Comparison:**
+```json
+// Before (old structure)
+{
+  "name": "web_search",
+  "description": "Search web for results",
+  "returnType": "ToolOutput",
+  "properties": [
+    {
+      "name": "query", 
+      "type": "QueryArgument",
+      "description": "Query string to search web for"
+    }
+  ]
+}
+
+// After (new improved structure)
+{
+  "tool_name": "web_search",
+  "description": "Search web for results", 
+  "arguments": [
+    {
+      "name": "query",
+      "description": "Query string to search web for",
+      "type": {
+        "type": "object"
+      }
+    }
+  ],
+  "example": {
+    "tool_name": "web_search",
+    "arguments": {}
+  }
+}
 ```
 
 This enables:
 - **API Documentation**: Auto-generate OpenAPI specs
 - **Tool Discovery**: Dynamically find and describe available tools
 - **Validation**: Verify argument structures before execution
-- **Integration**: Easy integration with external systems
+- **Integration**: Easy integration with external systems and AI platforms
 
 ## Architecture
 
@@ -696,14 +762,21 @@ Comprehensive test suite covering:
 # Run all tests
 swift test
 
-# Run specific test suite
+# Run specific test suite (use filtering for focused testing)
 swift test --filter ToolExecutionTests
+
+# Run specific test methods
+swift test --filter testToolDescriptorImplementation
 
 # Run tests with verbose output
 swift test --verbose
 
 # Run tests in parallel
 swift test --parallel
+
+# Run tests for specific modules
+swift test --filter ToolsSystemMacrosTests
+swift test --filter ToolsSystemTests
 ```
 
 ## Build Commands

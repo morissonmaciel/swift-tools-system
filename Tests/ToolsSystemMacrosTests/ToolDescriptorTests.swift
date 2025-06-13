@@ -14,22 +14,22 @@ import ToolsSystem
 func testTestToolJSONDescriptor() throws {
     let descriptor = TestTool.toolDescriptor
     
-    #expect(descriptor.name == "test_tool")
+    #expect(descriptor.tool_name == "test_tool")
     #expect(descriptor.description == "A test tool")
     #expect(descriptor.arguments.isEmpty) // TestTool has no arguments
-    #expect(descriptor.returnType.type == "ToolOutput")
+    #expect(descriptor.example != nil) // Should have example
 }
 
 @Test("CalcSquareRoot generates comprehensive JSON descriptor")
 func testCalcSquareRootJSONDescriptor() throws {
     let descriptor = CalcSquareRoot.toolDescriptor
     
-    #expect(descriptor.name == "calculate_square_root")
+    #expect(descriptor.tool_name == "calculate_square_root")
     #expect(descriptor.description == "Calculates the square root of a number")
     
-    // For now, let's just check that the basic structure is correct
-    // The argument parsing will be improved in future iterations
-    #expect(descriptor.returnType.type == "ToolOutput")
+    // Check arguments are present
+    #expect(descriptor.arguments.count > 0) // Should have arguments
+    #expect(descriptor.example != nil) // Should have example
 }
 
 @Test("JSON string is properly formatted")
@@ -45,7 +45,7 @@ func testJSONStringFormatting() throws {
     let jsonData = jsonString.data(using: .utf8)!
     let parsedJSON = try JSONSerialization.jsonObject(with: jsonData) as! [String: Any]
     
-    #expect(parsedJSON["name"] as? String == "test_tool")
+    #expect(parsedJSON["tool_name"] as? String == "test_tool")
     #expect(parsedJSON["description"] as? String == "A test tool")
 }
 
@@ -61,7 +61,7 @@ func testComplexToolJSONDescriptor() throws {
     let jsonData = jsonString.data(using: .utf8)!
     let parsedJSON = try JSONSerialization.jsonObject(with: jsonData) as! [String: Any]
     
-    #expect(parsedJSON["name"] as? String == "calculate_square_root")
+    #expect(parsedJSON["tool_name"] as? String == "calculate_square_root")
     #expect(parsedJSON["description"] as? String == "Calculates the square root of a number")
     
     // Check that arguments array exists (even if empty for now)
@@ -71,18 +71,22 @@ func testComplexToolJSONDescriptor() throws {
 
 @Test("ToolDescriptor is codable")
 func testToolDescriptorCodable() throws {
+    let example = ToolExample(
+        toolName: "test",
+        arguments: ["input": AnyCodable("test_value")]
+    )
+    
     let descriptor = ToolDescriptor(
-        name: "test",
+        toolName: "test",
         description: "A test descriptor",
         arguments: [
             ArgumentDescriptor(
                 name: "input",
                 description: "Test input",
-                properties: [
-                    "value": PropertyDescriptor(type: "String", required: true)
-                ]
+                type: ArgumentTypeDescriptor(type: "string")
             )
-        ]
+        ],
+        example: example
     )
     
     // Test encoding
@@ -93,10 +97,10 @@ func testToolDescriptorCodable() throws {
     let decoder = JSONDecoder()
     let decoded = try decoder.decode(ToolDescriptor.self, from: data)
     
-    #expect(decoded.name == "test")
+    #expect(decoded.tool_name == "test")
     #expect(decoded.description == "A test descriptor")
     #expect(decoded.arguments.count == 1)
     #expect(decoded.arguments[0].name == "input")
-    #expect(decoded.arguments[0].properties["value"]?.type == "String")
-    #expect(decoded.arguments[0].properties["value"]?.required == true)
+    #expect(decoded.arguments[0].type.type == "string")
+    #expect(decoded.example?.tool_name == "test")
 }

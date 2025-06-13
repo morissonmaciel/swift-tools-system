@@ -102,32 +102,35 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
                            let argNameString = extractStringLiteral(arguments.first!.expression),
                            let argDescString = extractStringLiteral(arguments.dropFirst().first!.expression) {
                             
-                            // Generate properties map for this argument
-                            var properties: [String] = []
+                            // Generate type information for this argument
+                            // For now, we'll infer the type from the first property
+                            var argumentType = "string" // default
+                            
                             for memberDecl in structDecl.memberBlock.members {
                                 if let varDecl = memberDecl.decl.as(VariableDeclSyntax.self),
                                    let binding = varDecl.bindings.first,
-                                   let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier,
                                    let typeAnnotation = binding.typeAnnotation?.type {
                                     
-                                    let propertyName = identifier.text
                                     let typeName = typeAnnotation.description.trimmingCharacters(in: .whitespacesAndNewlines)
                                     
-                                    // Check if property has @Required attribute
-                                    let isRequired = varDecl.attributes.contains { attr in
-                                        if let attrSyntax = attr.as(AttributeSyntax.self),
-                                           let attrId = attrSyntax.attributeName.as(IdentifierTypeSyntax.self) {
-                                            return attrId.name.text == "Required"
-                                        }
-                                        return false
+                                    // Map Swift types to JSON schema types
+                                    switch typeName {
+                                    case "String":
+                                        argumentType = "string"
+                                    case "Int", "Int32", "Int64":
+                                        argumentType = "integer"
+                                    case "Double", "Float":
+                                        argumentType = "number"
+                                    case "Bool":
+                                        argumentType = "boolean"
+                                    default:
+                                        argumentType = "string"
                                     }
-                                    
-                                    properties.append("\"\(propertyName)\": PropertyDescriptor(type: \"\(typeName)\", required: \(isRequired))")
+                                    break // Use the first property's type
                                 }
                             }
                             
-                            let propertiesString = properties.isEmpty ? "[:]" : "[\(properties.joined(separator: ", "))]"
-                            argumentDescriptors.append("ArgumentDescriptor(name: \"\(argNameString)\", description: \"\(argDescString)\", properties: \(propertiesString))")
+                            argumentDescriptors.append("ArgumentDescriptor(name: \"\(argNameString)\", description: \"\(argDescString)\", type: ArgumentTypeDescriptor(type: \"\(argumentType)\"))")
                         }
                     }
                 }
@@ -143,11 +146,15 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
                 }
                 
                 public static var toolDescriptor: ToolDescriptor {
+                    let example = ToolExample(
+                        toolName: \(literal: nameString),
+                        arguments: [:]
+                    )
                     return ToolDescriptor(
-                        name: \(literal: nameString),
+                        toolName: \(literal: nameString),
                         description: \(literal: descString),
                         arguments: \(raw: argumentsArray),
-                        returnType: ReturnTypeDescriptor()
+                        example: example
                     )
                 }
             }

@@ -16,29 +16,28 @@ import Foundation
 /// Example JSON output:
 /// ```json
 /// {
-///   "name": "calculate_square_root",
-///   "description": "Calculates the square root of a number",
+///   "tool_name": "web_search",
+///   "description": "Search the web for results based on a query string.",
 ///   "arguments": [
 ///     {
-///       "name": "input",
-///       "description": "The number to calculate the square root of",
-///       "properties": {
-///         "number": {
-///           "type": "Double",
-///           "required": true
-///         }
+///       "name": "query",
+///       "description": "The query string to search the web for.",
+///       "type": {
+///         "type": "string"
 ///       }
 ///     }
 ///   ],
-///   "returnType": {
-///     "type": "ToolOutput",
-///     "description": "The calculated result"
+///   "example": {
+///     "tool_name": "web_search",
+///     "arguments": {
+///       "query": "latest news on AI"
+///     }
 ///   }
 /// }
 /// ```
 public struct ToolDescriptor: Codable, Sendable {
     /// The tool's unique identifier name.
-    public let name: String
+    public let tool_name: String
     
     /// Human-readable description of the tool's functionality.
     public let description: String
@@ -46,25 +45,29 @@ public struct ToolDescriptor: Codable, Sendable {
     /// Array of argument descriptors for this tool.
     public let arguments: [ArgumentDescriptor]
     
-    /// Description of the tool's return type.
-    public let returnType: ReturnTypeDescriptor
+    /// Example usage of the tool.
+    public let example: ToolExample?
+    
+    enum CodingKeys: String, CodingKey {
+        case tool_name, description, arguments, example
+    }
     
     /// Creates a new tool descriptor.
     ///
     /// - Parameters:
-    ///   - name: The tool's unique identifier
+    ///   - toolName: The tool's unique identifier
     ///   - description: The tool's functionality description
     ///   - arguments: Array of argument descriptors
-    ///   - returnType: Description of the return type
-    public init(name: String, description: String, arguments: [ArgumentDescriptor] = [], returnType: ReturnTypeDescriptor = ReturnTypeDescriptor()) {
-        self.name = name
+    ///   - example: Optional example usage
+    public init(toolName: String, description: String, arguments: [ArgumentDescriptor] = [], example: ToolExample? = nil) {
+        self.tool_name = toolName
         self.description = description
         self.arguments = arguments
-        self.returnType = returnType
+        self.example = example
     }
 }
 
-/// Descriptor for a tool argument including its properties and validation rules.
+/// Descriptor for a tool argument including its type information.
 public struct ArgumentDescriptor: Codable, Sendable {
     /// The argument's unique identifier name.
     public let name: String
@@ -72,61 +75,95 @@ public struct ArgumentDescriptor: Codable, Sendable {
     /// Human-readable description of the argument's purpose.
     public let description: String
     
-    /// Dictionary of properties within this argument.
-    public let properties: [String: PropertyDescriptor]
+    /// Type information for this argument.
+    public let type: ArgumentTypeDescriptor
     
     /// Creates a new argument descriptor.
     ///
     /// - Parameters:
     ///   - name: The argument's unique identifier
     ///   - description: The argument's purpose description
-    ///   - properties: Dictionary of properties within the argument
-    public init(name: String, description: String, properties: [String: PropertyDescriptor] = [:]) {
+    ///   - type: Type information for the argument
+    public init(name: String, description: String, type: ArgumentTypeDescriptor) {
         self.name = name
         self.description = description
-        self.properties = properties
+        self.type = type
     }
 }
 
-/// Descriptor for a property within an argument.
-public struct PropertyDescriptor: Codable, Sendable {
-    /// The Swift type name of the property.
+/// Descriptor for argument type information.
+public struct ArgumentTypeDescriptor: Codable, Sendable {
+    /// The type name (e.g., "string", "number", "boolean").
     public let type: String
     
-    /// Whether this property is required.
-    public let required: Bool
-    
-    /// Optional description of the property.
-    public let description: String?
-    
-    /// Creates a new property descriptor.
+    /// Creates a new argument type descriptor.
     ///
-    /// - Parameters:
-    ///   - type: The Swift type name
-    ///   - required: Whether the property is required
-    ///   - description: Optional description of the property
-    public init(type: String, required: Bool = false, description: String? = nil) {
+    /// - Parameter type: The type name
+    public init(type: String) {
         self.type = type
-        self.required = required
-        self.description = description
     }
 }
 
-/// Descriptor for the tool's return type.
-public struct ReturnTypeDescriptor: Codable, Sendable {
-    /// The return type name.
-    public let type: String
+/// Example usage of a tool.
+public struct ToolExample: Codable, Sendable {
+    /// The tool name in the example.
+    public let tool_name: String
     
-    /// Description of what the tool returns.
-    public let description: String
+    /// Example arguments as a dictionary.
+    public let arguments: [String: AnyCodable]
     
-    /// Creates a new return type descriptor.
+    enum CodingKeys: String, CodingKey {
+        case tool_name, arguments
+    }
+    
+    /// Creates a new tool example.
     ///
     /// - Parameters:
-    ///   - type: The return type name
-    ///   - description: Description of what is returned
-    public init(type: String = "ToolOutput", description: String = "The result of the tool execution") {
-        self.type = type
-        self.description = description
+    ///   - toolName: The tool name
+    ///   - arguments: Example arguments
+    public init(toolName: String, arguments: [String: AnyCodable]) {
+        self.tool_name = toolName
+        self.arguments = arguments
+    }
+}
+
+/// A type-erased wrapper for Codable values in examples.
+public struct AnyCodable: Codable, Sendable {
+    public let value: any Codable & Sendable
+    
+    public init<T: Codable & Sendable>(_ value: T) {
+        self.value = value
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if let stringValue = try? container.decode(String.self) {
+            self.value = stringValue
+        } else if let intValue = try? container.decode(Int.self) {
+            self.value = intValue
+        } else if let doubleValue = try? container.decode(Double.self) {
+            self.value = doubleValue
+        } else if let boolValue = try? container.decode(Bool.self) {
+            self.value = boolValue
+        } else {
+            throw DecodingError.typeMismatch(AnyCodable.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unsupported type"))
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        
+        if let stringValue = value as? String {
+            try container.encode(stringValue)
+        } else if let intValue = value as? Int {
+            try container.encode(intValue)
+        } else if let doubleValue = value as? Double {
+            try container.encode(doubleValue)
+        } else if let boolValue = value as? Bool {
+            try container.encode(boolValue)
+        } else {
+            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: encoder.codingPath, debugDescription: "Unsupported type"))
+        }
     }
 }
