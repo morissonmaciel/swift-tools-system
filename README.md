@@ -10,11 +10,49 @@ ToolsSystemMacros enables you to build executable tools that can be integrated i
 
 - **Type-safe tool definitions** with compile-time validation
 - **Automatic code generation** via Swift macros
+- **Asynchronous execution** with full async/await support
 - **Structured argument handling** with validation
 - **Multiple output types** including primitives and arrays
 - **JSON descriptors** for API documentation and discovery
 - **Comprehensive error handling**
 - **Full serialization support**
+
+## Async/Await Support
+
+All tools support asynchronous execution out of the box. This enables tools to perform:
+- Network requests and API calls
+- File I/O operations  
+- Database queries
+- Long-running computations
+- Any other asynchronous work
+
+### Async Tool Example
+
+```swift
+@Tool("fetch_data", "Fetches data from a remote API")
+struct DataFetcher {
+    @ToolArgument("request", "API request configuration")
+    struct APIRequest {
+        let url: String
+        let timeout: TimeInterval
+    }
+    
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        let request = try arguments.decode(APIRequest.self)
+        
+        // Perform async network request
+        let (data, _) = try await URLSession.shared.data(from: URL(string: request.url)!)
+        let response = String(data: data, encoding: .utf8) ?? ""
+        
+        return .string(response)
+    }
+}
+
+// Usage with async/await
+let fetcher = DataFetcher()
+let request = DataFetcher.APIRequest(url: "https://api.example.com/data", timeout: 30.0)
+let result = try await fetcher.call(arguments: [request])
+```
 
 ## Project Setup
 
@@ -70,14 +108,14 @@ import ToolsSystemMacros
 
 @Tool("greet", "Returns a friendly greeting")
 struct GreetingTool {
-    func call(arguments: [Argument]) throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         return .string("Hello! 👋")
     }
 }
 
 // Usage
 let tool = GreetingTool()
-let result = try tool.call(arguments: [])
+let result = try await tool.call(arguments: [])
 print(tool.jsonDescription) // Get JSON descriptor
 ```
 
@@ -106,7 +144,7 @@ struct SquareCalculator {
         let value: Double
     }
     
-    func call(arguments: [Argument]) throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let input = try arguments.decode(NumberInput.self)
         let result = input.value * input.value
         return .double(result)
@@ -116,7 +154,7 @@ struct SquareCalculator {
 // Usage
 let calculator = SquareCalculator()
 let input = SquareCalculator.NumberInput(value: 5.0)
-let result = try calculator.call(arguments: [input])
+let result = try await calculator.call(arguments: [input])
 
 if case .double(let squared) = result {
     print("5² = \(squared)") // Prints: 5² = 25.0
@@ -138,7 +176,7 @@ struct TextFormatter {
         let maxLength: Int?
     }
     
-    func call(arguments: [Argument]) throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let options = try arguments.decode(FormatOptions.self)
         
         var result = options.text
@@ -167,7 +205,7 @@ let options = TextFormatter.FormatOptions(
     addEmoji: true,
     maxLength: 20
 )
-let result = try formatter.call(arguments: [options])
+let result = try await formatter.call(arguments: [options])
 ```
 
 ### Level 4: Advanced Tool with Multiple Output Types
@@ -183,7 +221,7 @@ struct NumberAnalyzer {
         let operation: String // "sum", "average", "stats", "list"
     }
     
-    func call(arguments: [Argument]) throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let data = try arguments.decode(DataSet.self)
         
         guard !data.numbers.isEmpty else {
@@ -220,11 +258,11 @@ let analyzer = NumberAnalyzer()
 
 // Get sum
 let sumInput = NumberAnalyzer.DataSet(numbers: [1, 2, 3, 4, 5], operation: "sum")
-let sumResult = try analyzer.call(arguments: [sumInput])
+let sumResult = try await analyzer.call(arguments: [sumInput])
 
 // Get statistics array
 let statsInput = NumberAnalyzer.DataSet(numbers: [10, 20, 30], operation: "stats")
-let statsResult = try analyzer.call(arguments: [statsInput])
+let statsResult = try await analyzer.call(arguments: [statsInput])
 ```
 
 ### Level 5: Real-World Example - File Processor
@@ -242,7 +280,7 @@ struct FileProcessor {
         let maxSize: Int? // Maximum file size to process
     }
     
-    func call(arguments: [Argument]) throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let operation = try arguments.decode(FileOperation.self)
         let url = URL(fileURLWithPath: operation.filePath)
         
@@ -357,7 +395,7 @@ return .data(binaryData)
 Comprehensive error handling with standardized errors:
 
 ```swift
-func call(arguments: [Argument]) throws -> ToolOutput {
+func call(arguments: [Argument]) async throws -> ToolOutput {
     // Handle missing arguments
     guard !arguments.isEmpty else {
         throw ToolError.noArguments
@@ -371,7 +409,9 @@ func call(arguments: [Argument]) throws -> ToolOutput {
         return .string("Validation failed: Invalid input")
     }
     
-    // ... tool logic
+    // ... async tool logic
+    let result = await performAsyncOperation(input)
+    return .string(result)
 }
 ```
 
