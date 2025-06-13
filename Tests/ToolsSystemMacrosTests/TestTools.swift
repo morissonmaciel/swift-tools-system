@@ -14,17 +14,17 @@ import Darwin
 
 // Simple test to verify the macro compiles and works
 @Tool("test_tool", "A test tool")
-struct TestTool {
+struct TestTool: Sendable {
     func call(arguments: [Argument]) async throws -> ToolOutput {
         return .string("test result")
     }
 }
 
 @Tool("calculate_square_root", "Calculates the square root of a number")
-struct CalcSquareRoot {
+struct CalcSquareRoot: Sendable {
     
     @ToolArgument("input", "The number to calculate the square root of")
-    struct InputArgument {
+    struct InputArgument: Sendable {
         var number: Double
     }
     

@@ -34,18 +34,18 @@ import Foundation
 ///     }
 /// }
 /// ```
-public protocol ToolProtocol: Codable {
+public protocol ToolProtocol: Codable, Sendable {
     /// The argument type that this tool expects to receive.
     ///
     /// This associated type ensures compile-time type safety between the tool
     /// and its arguments. It must conform to `ToolArgumentProtocol`.
-    associatedtype Argument: ToolArgumentProtocol
+    associatedtype Argument: ToolArgumentProtocol & Sendable
     
     /// Metadata describing this tool's name and purpose.
     ///
     /// The definition contains essential information about the tool that can be
     /// used for discovery, documentation, and user interfaces.
-    var definition: ToolDefinition { get }
+    static var definition: ToolDefinition { get }
     
     /// Executes the tool with the provided arguments asynchronously.
     ///
@@ -79,8 +79,7 @@ public extension ToolProtocol {
     ///
     /// Example usage:
     /// ```swift
-    /// let calculator = SquareRootCalculator()
-    /// let jsonData = try JSONEncoder().encode(calculator.toolDescriptor)
+    /// let jsonData = try JSONEncoder().encode(SquareRootCalculator.toolDescriptor)
     /// let jsonString = String(data: jsonData, encoding: .utf8)
     /// print(jsonString)
     /// ```
@@ -90,7 +89,7 @@ public extension ToolProtocol {
     /// - Detailed argument specifications with property types
     /// - Return type information
     /// - Validation requirements
-    var toolDescriptor: ToolDescriptor {
+    static var toolDescriptor: ToolDescriptor {
         return ToolDescriptor(
             name: definition.name,
             description: definition.description,
@@ -107,11 +106,10 @@ public extension ToolProtocol {
     ///
     /// Example:
     /// ```swift
-    /// let calculator = SquareRootCalculator()
-    /// print(calculator.jsonDescription)
+    /// print(SquareRootCalculator.jsonDescription)
     /// // Outputs: {"name":"calculate_square_root","description":"..."}
     /// ```
-    var jsonDescription: String {
+    static var jsonDescription: String {
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

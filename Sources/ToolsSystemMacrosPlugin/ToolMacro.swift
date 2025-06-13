@@ -26,13 +26,10 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
         let nameExpr = arguments.first!.expression
         let descExpr = arguments.dropFirst().first!.expression
         
-        guard let nameString = extractStringLiteral(nameExpr),
-              let descString = extractStringLiteral(descExpr) else {
+        guard let _ = extractStringLiteral(nameExpr),
+              let _ = extractStringLiteral(descExpr) else {
             throw MacroError.invalidArguments
         }
-        
-        // Generate the definition property
-        let definition = try VariableDeclSyntax("public static var definition: ToolDefinition { ToolDefinition(name: \(literal: nameString), description: \(literal: descString)) }")
         
         // Look for nested argument structs or create a default one
         var argumentTypeAlias: TypeAliasDeclSyntax
@@ -63,7 +60,7 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
             argumentTypeAlias = try TypeAliasDeclSyntax("public typealias Argument = EmptyArgument")
         }
         
-        return [DeclSyntax(definition), DeclSyntax(argumentTypeAlias)]
+        return [DeclSyntax(argumentTypeAlias)]
     }
     
     public static func expansion(
@@ -141,11 +138,11 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
         
         let extensionDecl = try ExtensionDeclSyntax("""
             extension \(type.trimmed): ToolProtocol {
-                public var definition: ToolDefinition {
+                public static var definition: ToolDefinition {
                     ToolDefinition(name: \(literal: nameString), description: \(literal: descString))
                 }
                 
-                public var toolDescriptor: ToolDescriptor {
+                public static var toolDescriptor: ToolDescriptor {
                     return ToolDescriptor(
                         name: \(literal: nameString),
                         description: \(literal: descString),

@@ -12,8 +12,7 @@ import ToolsSystem
 
 @Test("TestTool generates basic JSON descriptor")
 func testTestToolJSONDescriptor() throws {
-    let tool = TestTool()
-    let descriptor = tool.toolDescriptor
+    let descriptor = TestTool.toolDescriptor
     
     #expect(descriptor.name == "test_tool")
     #expect(descriptor.description == "A test tool")
@@ -23,8 +22,7 @@ func testTestToolJSONDescriptor() throws {
 
 @Test("CalcSquareRoot generates comprehensive JSON descriptor")
 func testCalcSquareRootJSONDescriptor() throws {
-    let tool = CalcSquareRoot()
-    let descriptor = tool.toolDescriptor
+    let descriptor = CalcSquareRoot.toolDescriptor
     
     #expect(descriptor.name == "calculate_square_root")
     #expect(descriptor.description == "Calculates the square root of a number")
@@ -36,8 +34,7 @@ func testCalcSquareRootJSONDescriptor() throws {
 
 @Test("JSON string is properly formatted")
 func testJSONStringFormatting() throws {
-    let tool = TestTool()
-    let jsonString = tool.jsonDescription
+    let jsonString = TestTool.jsonDescription
     
     // Should be valid JSON
     #expect(!jsonString.contains("Error"))
@@ -54,8 +51,7 @@ func testJSONStringFormatting() throws {
 
 @Test("Complex tool JSON descriptor is complete")
 func testComplexToolJSONDescriptor() throws {
-    let tool = CalcSquareRoot()
-    let jsonString = tool.jsonDescription
+    let jsonString = CalcSquareRoot.jsonDescription
     
     #expect(!jsonString.contains("Error"))
     #expect(jsonString.contains("calculate_square_root"))

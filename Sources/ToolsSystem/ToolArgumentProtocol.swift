@@ -21,7 +21,7 @@ import Foundation
 ///     let priority: Int
 /// }
 /// ```
-public protocol ToolArgumentProtocol: Codable {
+public protocol ToolArgumentProtocol: Codable, Sendable {
     
 }
 
@@ -40,7 +40,7 @@ public protocol ToolArgumentProtocol: Codable {
 ///     }
 /// }
 /// ```
-public struct EmptyArgument: ToolArgumentProtocol {
+public struct EmptyArgument: ToolArgumentProtocol, Sendable {
     /// Creates a new empty argument instance.
     public init() {}
 }

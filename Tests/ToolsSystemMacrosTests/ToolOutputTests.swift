@@ -241,7 +241,7 @@ func testToolOutputWrappedValue() {
     
     // Test array wrappedValue
     let arrayOutput = ToolOutput.array(["test", 123, false])
-    let arrayValue = arrayOutput.wrappedValue as? [any Codable]
+    let arrayValue = arrayOutput.wrappedValue as? [any Codable & Sendable]
     #expect(arrayValue?.count == 3)
     #expect(arrayValue?[0] as? String == "test")
     #expect(arrayValue?[1] as? Int == 123)
@@ -249,7 +249,7 @@ func testToolOutputWrappedValue() {
     
     // Test dictionary wrappedValue
     let dictOutput = ToolOutput.dictionary(["name": "John", "age": 30, "active": true])
-    let dictValue = dictOutput.wrappedValue as? [String: any Codable]
+    let dictValue = dictOutput.wrappedValue as? [String: any Codable & Sendable]
     #expect(dictValue?["name"] as? String == "John")
     #expect(dictValue?["age"] as? Int == 30)
     #expect(dictValue?["active"] as? Bool == true)
@@ -259,7 +259,7 @@ func testToolOutputWrappedValue() {
         ["id": 1, "name": "Alice"],
         ["id": 2, "name": "Bob"]
     ])
-    let dictArrayValue = dictArrayOutput.wrappedValue as? [[String: any Codable]]
+    let dictArrayValue = dictArrayOutput.wrappedValue as? [[String: any Codable & Sendable]]
     #expect(dictArrayValue?.count == 2)
     #expect(dictArrayValue?[0]["id"] as? Int == 1)
     #expect(dictArrayValue?[0]["name"] as? String == "Alice")

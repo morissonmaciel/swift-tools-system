@@ -25,7 +25,7 @@ import Foundation
 ///     }
 /// }
 /// ```
-public enum ToolError: Error {
+public enum ToolError: Error, Sendable, Equatable {
     /// Thrown when a tool expects arguments but none are provided.
     ///
     /// This error occurs when `arguments.decode()` is called on an empty array,
@@ -38,4 +38,10 @@ public enum ToolError: Error {
     /// doesn't match the actual argument type provided, indicating a type mismatch
     /// between what the tool expects and what was provided.
     case invalidArgumentType
+    
+    /// Thrown when a tool execution fails with a specific error message.
+    ///
+    /// This error is used to indicate that a tool's execution failed for a specific
+    /// reason, such as when trying to execute a decoded AnyTool instance.
+    case executionFailed(String)
 }

@@ -454,7 +454,7 @@ let tool = ExampleTool()
 let result = try await tool.call(arguments: [])
 
 // Direct access without pattern matching
-let dictionary = result.wrappedValue as? [String: any Codable]
+let dictionary = result.wrappedValue as? [String: any Codable & Sendable]
 let name = dictionary?["name"] as? String  // "John"
 let age = dictionary?["age"] as? Int       // 30
 let active = dictionary?["active"] as? Bool // true
@@ -470,7 +470,7 @@ let stringOutput = ToolOutput.string("Hello")
 let stringValue = stringOutput.wrappedValue as? String // "Hello"
 
 let arrayOutput = ToolOutput.dictionaryArray([["id": 1], ["id": 2]])
-let arrayValue = arrayOutput.wrappedValue as? [[String: any Codable]]
+let arrayValue = arrayOutput.wrappedValue as? [[String: any Codable & Sendable]]
 ```
 
 ### Dictionary and Dictionary Array Output with Pretty JSON
@@ -594,6 +594,34 @@ func call(arguments: [Argument]) async throws -> ToolOutput {
     let result = await performAsyncOperation(input)
     return .string(result)
 }
+```
+
+## Type Erasure with AnyTool
+
+When working with tools in `Codable` contexts where you need to store `any ToolProtocol`, use the `AnyTool` wrapper:
+
+```swift
+struct ThreadModelResponse: Codable {
+    let id: String
+    let tool: AnyTool?  // Instead of: var tool: (any ToolProtocol)?
+}
+
+// Usage
+let calcTool = CalcSquareRoot()
+let anyTool = AnyTool(calcTool)
+let response = ThreadModelResponse(id: "123", tool: anyTool)
+
+// Execute the wrapped tool
+let inputArgument = CalcSquareRoot.InputArgument(number: 16.0)
+let result = try await anyTool.call(arguments: [inputArgument])
+
+// Serialize/deserialize the response
+let encoder = JSONEncoder()
+let data = try encoder.encode(response)
+let decodedResponse = try JSONDecoder().decode(ThreadModelResponse.self, from: data)
+
+// Note: Decoded AnyTool instances preserve tool metadata but cannot execute
+// since the original tool implementation is lost during encoding
 ```
 
 ## Troubleshooting

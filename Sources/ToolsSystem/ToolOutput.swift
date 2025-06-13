@@ -25,7 +25,7 @@ import Foundation
 ///     return .dictionaryArray([["id": 1, "name": "John"], ["id": 2, "name": "Jane"]]) // Array of objects
 /// }
 /// ```
-public enum ToolOutput {
+public enum ToolOutput: Sendable {
     /// A string text result.
     case string(String)
     
@@ -45,25 +45,25 @@ public enum ToolOutput {
     ///
     /// The array can contain any combination of supported types (String, Double, Int, Bool).
     /// This is useful for returning lists or collections of data.
-    case array([any Codable])
+    case array([any Codable & Sendable])
     
     /// A dictionary containing structured key-value data.
     ///
     /// The dictionary values can be any codable type. When accessed via `description`,
     /// this provides a pretty-printed JSON representation for easy reading.
     /// This is useful for returning structured objects and complex data.
-    case dictionary([String: any Codable])
+    case dictionary([String: any Codable & Sendable])
     
     /// An array of dictionaries containing structured key-value data.
     ///
     /// Each dictionary's values can be any codable type. When accessed via `description`,
     /// this provides a pretty-printed JSON array representation for easy reading.
     /// This is useful for returning lists of structured objects and collections of data.
-    case dictionaryArray([[String: any Codable]])
+    case dictionaryArray([[String: any Codable & Sendable]])
 }
 
 // Helper enum for encoding mixed-type values in dictionaries
-private enum AnyCodableValue: Codable {
+private enum AnyCodableValue: Codable, Sendable {
     case string(String)
     case int(Int)
     case double(Double)
@@ -102,7 +102,7 @@ private enum AnyCodableValue: Codable {
 }
 
 // Helper struct for dynamic dictionary keys during Codable operations
-private struct DynamicKey: CodingKey {
+private struct DynamicKey: CodingKey, Sendable {
     var stringValue: String
     var intValue: Int?
     
@@ -144,7 +144,7 @@ extension ToolOutput: Codable {
             self = .data(value)
         case "array":
             let arrayContainer = try container.nestedUnkeyedContainer(forKey: .value)
-            var elements: [any Codable] = []
+            var elements: [any Codable & Sendable] = []
             var mutableContainer = arrayContainer
             
             while !mutableContainer.isAtEnd {
@@ -164,7 +164,7 @@ extension ToolOutput: Codable {
             self = .array(elements)
         case "dictionary":
             let dictContainer = try container.nestedContainer(keyedBy: DynamicKey.self, forKey: .value)
-            var dictionary: [String: any Codable] = [:]
+            var dictionary: [String: any Codable & Sendable] = [:]
             
             for key in dictContainer.allKeys {
                 // Try decoding in a specific order: bool first (since it's a subset of int), then int, then double, then string
@@ -181,12 +181,12 @@ extension ToolOutput: Codable {
             self = .dictionary(dictionary)
         case "dictionaryArray":
             let arrayContainer = try container.nestedUnkeyedContainer(forKey: .value)
-            var dictionaries: [[String: any Codable]] = []
+            var dictionaries: [[String: any Codable & Sendable]] = []
             var mutableContainer = arrayContainer
             
             while !mutableContainer.isAtEnd {
                 let dictContainer = try mutableContainer.nestedContainer(keyedBy: DynamicKey.self)
-                var dictionary: [String: any Codable] = [:]
+                var dictionary: [String: any Codable & Sendable] = [:]
                 
                 for key in dictContainer.allKeys {
                     // Try decoding in a specific order: bool first, then int, then double, then string
@@ -297,7 +297,7 @@ extension ToolOutput {
     /// let value = output.wrappedValue as? String // "Hello"
     /// 
     /// let dictOutput = ToolOutput.dictionary(["name": "John", "age": 30])
-    /// let dict = dictOutput.wrappedValue as? [String: any Codable]
+    /// let dict = dictOutput.wrappedValue as? [String: any Codable & Sendable]
     /// ```
     public var wrappedValue: Any {
         switch self {
@@ -348,7 +348,7 @@ extension ToolOutput: CustomStringConvertible {
     }
     
     /// Converts a dictionary to a pretty-printed JSON string.
-    private func prettyJSONString(from dictionary: [String: any Codable]) -> String {
+    private func prettyJSONString(from dictionary: [String: any Codable & Sendable]) -> String {
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
@@ -376,7 +376,7 @@ extension ToolOutput: CustomStringConvertible {
     }
     
     /// Converts an array of dictionaries to a pretty-printed JSON array string.
-    private func prettyJSONArrayString(from dictionaries: [[String: any Codable]]) -> String {
+    private func prettyJSONArrayString(from dictionaries: [[String: any Codable & Sendable]]) -> String {
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]

@@ -12,8 +12,7 @@ import ToolsSystem
 
 @Test("Tool macro generates correct definition")
 func testToolMacroDefinition() {
-    let tool = TestTool()
-    let definition = tool.definition
+    let definition = TestTool.definition
     
     #expect(definition.name == "test_tool")
     #expect(definition.description == "A test tool")
@@ -21,8 +20,7 @@ func testToolMacroDefinition() {
 
 @Test("Tool macro works with different names and descriptions")
 func testToolMacroWithDifferentValues() {
-    let calcTool = CalcSquareRoot()
-    let definition = calcTool.definition
+    let definition = CalcSquareRoot.definition
     
     #expect(definition.name == "calculate_square_root")
     #expect(definition.description == "Calculates the square root of a number")

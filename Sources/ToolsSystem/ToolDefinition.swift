@@ -20,7 +20,7 @@ import Foundation
 ///     description: "Calculates the sum of two numbers"
 /// )
 /// ```
-public struct ToolDefinition: Codable {
+public struct ToolDefinition: Codable, Sendable {
     /// The unique identifier name for the tool.
     ///
     /// This should be a descriptive, snake_case string that uniquely identifies

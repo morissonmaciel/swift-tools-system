@@ -154,8 +154,7 @@ func testCalcSquareRootEndToEnd() async throws {
 
 @Test("Tool definition can be serialized")
 func testToolDefinitionSerialization() throws {
-    let tool = CalcSquareRoot()
-    let definition = tool.definition
+    let definition = CalcSquareRoot.definition
     
     // Test serialization
     let encoder = JSONEncoder()
@@ -170,7 +169,7 @@ func testToolDefinitionSerialization() throws {
 
 // Async tool defined at module level for testing
 @Tool("async_delay_tool", "A tool that simulates async work with delay")
-struct AsyncDelayTool {
+struct AsyncDelayTool: Sendable {
     func call(arguments: [Argument]) async throws -> ToolOutput {
         // Simulate async work
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds

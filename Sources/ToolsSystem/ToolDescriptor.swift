@@ -36,7 +36,7 @@ import Foundation
 ///   }
 /// }
 /// ```
-public struct ToolDescriptor: Codable {
+public struct ToolDescriptor: Codable, Sendable {
     /// The tool's unique identifier name.
     public let name: String
     
@@ -65,7 +65,7 @@ public struct ToolDescriptor: Codable {
 }
 
 /// Descriptor for a tool argument including its properties and validation rules.
-public struct ArgumentDescriptor: Codable {
+public struct ArgumentDescriptor: Codable, Sendable {
     /// The argument's unique identifier name.
     public let name: String
     
@@ -89,7 +89,7 @@ public struct ArgumentDescriptor: Codable {
 }
 
 /// Descriptor for a property within an argument.
-public struct PropertyDescriptor: Codable {
+public struct PropertyDescriptor: Codable, Sendable {
     /// The Swift type name of the property.
     public let type: String
     
@@ -113,7 +113,7 @@ public struct PropertyDescriptor: Codable {
 }
 
 /// Descriptor for the tool's return type.
-public struct ReturnTypeDescriptor: Codable {
+public struct ReturnTypeDescriptor: Codable, Sendable {
     /// The return type name.
     public let type: String
     
