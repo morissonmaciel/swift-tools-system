@@ -14,11 +14,11 @@ import ToolsSystem
 import Darwin
 
 @Test("TestTool executes correctly with empty arguments")
-func testTestToolExecution() throws {
+func testTestToolExecution() async throws {
     let tool = TestTool()
     let emptyArguments: [TestTool.Argument] = []
     
-    let result = try tool.call(arguments: emptyArguments)
+    let result = try await tool.call(arguments: emptyArguments)
     
     if case .string(let value) = result {
         #expect(value == "test result")
@@ -28,12 +28,12 @@ func testTestToolExecution() throws {
 }
 
 @Test("CalcSquareRoot executes correctly with valid input")
-func testCalcSquareRootExecution() throws {
+func testCalcSquareRootExecution() async throws {
     let tool = CalcSquareRoot()
     let inputArgument = CalcSquareRoot.InputArgument(number: 9.0)
     let arguments = [inputArgument]
     
-    let result = try tool.call(arguments: arguments)
+    let result = try await tool.call(arguments: arguments)
     
     if case .double(let value) = result {
         #expect(value == 3.0)
@@ -43,12 +43,12 @@ func testCalcSquareRootExecution() throws {
 }
 
 @Test("CalcSquareRoot executes correctly with decimal input")
-func testCalcSquareRootDecimalExecution() throws {
+func testCalcSquareRootDecimalExecution() async throws {
     let tool = CalcSquareRoot()
     let inputArgument = CalcSquareRoot.InputArgument(number: 2.0)
     let arguments = [inputArgument]
     
-    let result = try tool.call(arguments: arguments)
+    let result = try await tool.call(arguments: arguments)
     
     if case .double(let value) = result {
         // sqrt(2) ≈ 1.414213562373095
@@ -59,12 +59,12 @@ func testCalcSquareRootDecimalExecution() throws {
 }
 
 @Test("CalcSquareRoot handles zero input")
-func testCalcSquareRootZeroExecution() throws {
+func testCalcSquareRootZeroExecution() async throws {
     let tool = CalcSquareRoot()
     let inputArgument = CalcSquareRoot.InputArgument(number: 0.0)
     let arguments = [inputArgument]
     
-    let result = try tool.call(arguments: arguments)
+    let result = try await tool.call(arguments: arguments)
     
     if case .double(let value) = result {
         #expect(value == 0.0)
@@ -74,12 +74,12 @@ func testCalcSquareRootZeroExecution() throws {
 }
 
 @Test("CalcSquareRoot handles large input")
-func testCalcSquareRootLargeExecution() throws {
+func testCalcSquareRootLargeExecution() async throws {
     let tool = CalcSquareRoot()
     let inputArgument = CalcSquareRoot.InputArgument(number: 100.0)
     let arguments = [inputArgument]
     
-    let result = try tool.call(arguments: arguments)
+    let result = try await tool.call(arguments: arguments)
     
     if case .double(let value) = result {
         #expect(value == 10.0)
@@ -89,12 +89,12 @@ func testCalcSquareRootLargeExecution() throws {
 }
 
 @Test("CalcSquareRoot throws error with empty arguments")
-func testCalcSquareRootEmptyArgumentsError() {
+func testCalcSquareRootEmptyArgumentsError() async {
     let tool = CalcSquareRoot()
     let emptyArguments: [CalcSquareRoot.Argument] = []
     
-    #expect(throws: ToolError.noArguments) {
-        _ = try tool.call(arguments: emptyArguments)
+    await #expect(throws: ToolError.noArguments) {
+        _ = try await tool.call(arguments: emptyArguments)
     }
 }
 
@@ -118,7 +118,7 @@ func testToolArgumentDecodingWrongType() {
 }
 
 @Test("CalcSquareRoot end-to-end with JSON serialization")
-func testCalcSquareRootEndToEnd() throws {
+func testCalcSquareRootEndToEnd() async throws {
     // Create input argument
     let inputArgument = CalcSquareRoot.InputArgument(number: 16.0)
     
@@ -132,7 +132,7 @@ func testCalcSquareRootEndToEnd() throws {
     
     // Execute tool
     let tool = CalcSquareRoot()
-    let result = try tool.call(arguments: [decodedArgument])
+    let result = try await tool.call(arguments: [decodedArgument])
     
     // Test result
     if case .double(let value) = result {
@@ -166,4 +166,29 @@ func testToolDefinitionSerialization() throws {
     
     #expect(decoded.name == "calculate_square_root")
     #expect(decoded.description == "Calculates the square root of a number")
+}
+
+// Async tool defined at module level for testing
+@Tool("async_delay_tool", "A tool that simulates async work with delay")
+struct AsyncDelayTool {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        // Simulate async work
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        return .string("async completed")
+    }
+}
+
+@Test("Async tool with network delay simulation")
+func testAsyncToolWithDelay() async throws {
+    let tool = AsyncDelayTool()
+    let start = Date()
+    let result = try await tool.call(arguments: [])
+    let elapsed = Date().timeIntervalSince(start)
+    
+    if case .string(let value) = result {
+        #expect(value == "async completed")
+        #expect(elapsed >= 0.1, "Should take at least 0.1 seconds")
+    } else {
+        #expect(Bool(false), "Expected string result")
+    }
 }

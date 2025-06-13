@@ -15,7 +15,7 @@ import Darwin
 // Simple test to verify the macro compiles and works
 @Tool("test_tool", "A test tool")
 struct TestTool {
-    func call(arguments: [Argument]) throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         return .string("test result")
     }
 }
@@ -28,7 +28,7 @@ struct CalcSquareRoot {
         var number: Double
     }
     
-    func call(arguments: [Argument]) throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let inputArgument = try arguments.decode(InputArgument.self)
         let result = sqrt(inputArgument.number)
         return .double(result)

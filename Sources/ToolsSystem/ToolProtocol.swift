@@ -47,11 +47,12 @@ public protocol ToolProtocol: Codable {
     /// used for discovery, documentation, and user interfaces.
     var definition: ToolDefinition { get }
     
-    /// Executes the tool with the provided arguments.
+    /// Executes the tool with the provided arguments asynchronously.
     ///
     /// This is the core method where the tool's functionality is implemented.
     /// The method should decode the arguments, perform the required operations,
-    /// and return an appropriate `ToolOutput`.
+    /// and return an appropriate `ToolOutput`. The async nature allows for
+    /// long-running operations, network calls, and other asynchronous work.
     ///
     /// - Parameter arguments: An array of arguments conforming to the tool's `Argument` type
     /// - Returns: The result of the tool execution as a `ToolOutput`
@@ -59,13 +60,13 @@ public protocol ToolProtocol: Codable {
     ///
     /// Example:
     /// ```swift
-    /// func call(arguments: [Argument]) throws -> ToolOutput {
+    /// func call(arguments: [Argument]) async throws -> ToolOutput {
     ///     let input = try arguments.decode(MyArgumentType.self)
-    ///     let result = performOperation(input)
+    ///     let result = await performAsyncOperation(input)
     ///     return .string(result)
     /// }
     /// ```
-    func call(arguments: [Argument]) throws -> ToolOutput
+    func call(arguments: [Argument]) async throws -> ToolOutput
 }
 
 /// Default implementation providing JSON description functionality for all tools.
