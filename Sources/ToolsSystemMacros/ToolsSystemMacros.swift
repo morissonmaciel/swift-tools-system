@@ -100,6 +100,49 @@ public macro Tool(_ name: String, _ description: String) = #externalMacro(module
 @attached(extension, conformances: ToolArgumentProtocol)
 public macro ToolArgument(_ name: String, _ description: String, example: String) = #externalMacro(module: "ToolsSystemMacrosPlugin", type: "ToolArgumentMacro")
 
+/// Provides detailed instructions for a tool.
+///
+/// The `@ToolInstructions` macro allows you to specify detailed usage instructions
+/// that will be included in the tool's definition. These instructions provide
+/// additional guidance on how to use the tool effectively beyond the basic description.
+///
+/// ## Usage
+///
+/// ```swift
+/// @Tool("file_processor", "Processes files with various options")
+/// struct FileProcessor {
+///     @ToolInstructions("""
+///     This tool processes files in various formats. Provide the file path as a string,
+///     specify the desired output format, and indicate whether compression should be applied.
+///     The tool supports common formats like JSON, XML, and CSV.
+///     """)
+///
+///     @ToolArgument("file_options", "File processing configuration", example: "/path/to/file.txt")
+///     struct FileOptions {
+///         let filePath: String
+///         let format: String
+///         let compress: Bool
+///     }
+///
+///     func call(arguments: [Argument]) throws -> ToolOutput {
+///         let options = try arguments.decode(FileOptions.self)
+///         // Process file with the provided options
+///         return .string("File processed successfully")
+///     }
+/// }
+/// ```
+///
+/// ## Generated Code
+///
+/// The macro automatically generates:
+/// - An `instructions` property containing the detailed instructions
+/// - Integration with the `@Tool` macro to include instructions in the tool definition
+///
+/// - Parameters:
+///   - instructions: A detailed string describing how to use the tool effectively
+@attached(member, names: named(instructions))
+public macro ToolInstructions(_ instructions: String) = #externalMacro(module: "ToolsSystemMacrosPlugin", type: "ToolInstructionsMacro")
+
 /// Marks a property as required within a tool argument.
 ///
 /// The `@Required` macro provides metadata about argument properties that are mandatory

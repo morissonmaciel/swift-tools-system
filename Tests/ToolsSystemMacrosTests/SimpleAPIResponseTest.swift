@@ -10,8 +10,8 @@ import Testing
 import ToolsSystemMacros
 import ToolsSystem
 
-@Test("APIToolResponse decodes your exact JSON format")
-func testAPIToolResponseDecoding() throws {
+@Test("ToolResponse decodes your exact JSON format")
+func testToolResponseDecoding() throws {
     let jsonString = """
     {
       "message": "I need up to date information. Let me search on the web",
@@ -25,7 +25,7 @@ func testAPIToolResponseDecoding() throws {
     """
     
     let jsonData = jsonString.data(using: .utf8)!
-    let response = try JSONDecoder().decode(APIToolResponse.self, from: jsonData)
+    let response = try JSONDecoder().decode(ToolResponse.self, from: jsonData)
     
     #expect(response.message == "I need up to date information. Let me search on the web")
     #expect(response.tool != nil)
@@ -38,8 +38,8 @@ func testAPIToolResponseDecoding() throws {
     print("Query: \(response.tool?.getString("query") ?? "none")")
 }
 
-@Test("APIToolResponse handles different argument types")
-func testAPIToolResponseDifferentTypes() throws {
+@Test("ToolResponse handles different argument types")
+func testToolResponseDifferentTypes() throws {
     let jsonString = """
     {
       "message": "Processing complex request",
@@ -56,7 +56,7 @@ func testAPIToolResponseDifferentTypes() throws {
     """
     
     let jsonData = jsonString.data(using: .utf8)!
-    let response = try JSONDecoder().decode(APIToolResponse.self, from: jsonData)
+    let response = try JSONDecoder().decode(ToolResponse.self, from: jsonData)
     
     guard let tool = response.tool else {
         Issue.record("Tool should be present")
@@ -87,8 +87,8 @@ func testAPIToolResponseDifferentTypes() throws {
     print("✅ Successfully handled different argument types and enhanced methods")
 }
 
-@Test("APIToolResponse handles response without tool")
-func testAPIToolResponseWithoutTool() throws {
+@Test("ToolResponse handles response without tool")
+func testToolResponseWithoutTool() throws {
     let jsonString = """
     {
       "message": "This is just a regular response without any tool"
@@ -96,7 +96,7 @@ func testAPIToolResponseWithoutTool() throws {
     """
     
     let jsonData = jsonString.data(using: .utf8)!
-    let response = try JSONDecoder().decode(APIToolResponse.self, from: jsonData)
+    let response = try JSONDecoder().decode(ToolResponse.self, from: jsonData)
     
     #expect(response.message == "This is just a regular response without any tool")
     #expect(response.tool == nil)
@@ -183,12 +183,18 @@ func testEndToEndAPIHandling() async throws {
     ]
     
     for (index, jsonString) in apiResponses.enumerated() {
-        // 1. Decode the API response
-        let response = try JSONDecoder().decode(APIToolResponse.self, from: jsonString.data(using: .utf8)!)
+        // 1. Convert the string to data first, then decode
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            Issue.record("Failed to convert JSON string to data")
+            continue
+        }
         
-        print("\\n📱 API Response \(index + 1): \(response.message)")
+        // 2. Decode the API response
+        let response = try JSONDecoder().decode(ToolResponse.self, from: jsonData)
         
-        // 2. Handle the tool if present
+        print("📱 API Response \(index + 1): \(response.message)")
+        
+        // 3. Handle the tool if present
         if let tool = response.tool {
             do {
                 let result = try await registry.handleTool(tool)
@@ -201,7 +207,7 @@ func testEndToEndAPIHandling() async throws {
         }
     }
     
-    print("\\n✅ End-to-end handling completed successfully")
+    print("✅ End-to-end handling completed successfully")
 }
 
 @Test("Error handling for unknown tools")
@@ -209,7 +215,7 @@ func testErrorHandling() async throws {
     let registry = ToolRegistry.shared
     
     // Try to handle an unknown tool
-    let unknownToolCall = APIToolCall(
+    let unknownToolCall = ToolCall(
         tool_name: "unknown_tool",
         arguments: ["param": .string("value")]
     )

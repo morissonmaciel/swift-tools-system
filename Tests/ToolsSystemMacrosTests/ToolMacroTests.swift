@@ -34,3 +34,23 @@ func testToolProtocolConformance() {
     let calcTool = CalcSquareRoot()
     #expect(calcTool is any ToolProtocol)
 }
+
+@Test("Tool macro integrates with ToolInstructions")
+func testToolWithInstructions() {
+    let definition = FileProcessorTool.definition
+    
+    #expect(definition.name == "file_processor")
+    #expect(definition.description == "Processes files with various options")
+    #expect(!definition.instructions.isEmpty)
+    #expect(definition.instructions.contains("This tool processes files in various formats"))
+    #expect(definition.instructions.contains("JSON, XML, and CSV"))
+}
+
+@Test("Tool without instructions has empty instructions")
+func testToolWithoutInstructions() {
+    let definition = TestTool.definition
+    
+    #expect(definition.name == "test_tool")
+    #expect(definition.description == "A test tool")
+    #expect(definition.instructions.isEmpty)
+}

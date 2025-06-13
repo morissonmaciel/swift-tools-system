@@ -8,18 +8,18 @@
 import Foundation
 
 /// A simple, reliable response structure for your use case
-public struct APIToolResponse: Codable {
+public struct ToolResponse: Codable {
     public let message: String
-    public let tool: APIToolCall?
+    public let tool: ToolCall?
     
-    public init(message: String, tool: APIToolCall? = nil) {
+    public init(message: String, tool: ToolCall? = nil) {
         self.message = message
         self.tool = tool
     }
 }
 
 /// Represents a tool call from your API with arguments
-public struct APIToolCall: Codable {
+public struct ToolCall: Codable {
     public let tool_name: String
     public let arguments: [String: CodableValue]
     
@@ -174,7 +174,7 @@ public class ToolRegistry {
     }
     
     /// Handle a tool call from an API response
-    public func handleTool(_ toolCall: APIToolCall) async throws -> String {
+    public func handleTool(_ toolCall: ToolCall) async throws -> String {
         guard let handler = toolHandlers[toolCall.tool_name] else {
             throw ToolRegistryError.unknownTool(toolCall.tool_name)
         }
@@ -193,7 +193,7 @@ public class ToolRegistry {
     }
 }
 
-public typealias ToolHandler = (APIToolCall) async throws -> String
+public typealias ToolHandler = (ToolCall) async throws -> String
 
 public enum ToolRegistryError: Error, LocalizedError {
     case unknownTool(String)

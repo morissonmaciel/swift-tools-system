@@ -84,6 +84,63 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
             throw MacroError.invalidArguments
         }
         
+        // Scan for @ToolInstructions attribute
+        var instructionsString: String? = nil
+        
+        // First, check if the main declaration has @ToolInstructions
+        for attribute in declaration.attributes {
+            if let attributeSyntax = attribute.as(AttributeSyntax.self),
+               let identifier = attributeSyntax.attributeName.as(IdentifierTypeSyntax.self),
+               identifier.name.text == "ToolInstructions" {
+                
+                // Extract the instructions string parameter
+                if let arguments = attributeSyntax.arguments?.as(LabeledExprListSyntax.self),
+                   arguments.count >= 1,
+                   let extractedInstructions = extractStringLiteral(arguments.first!.expression) {
+                    instructionsString = extractedInstructions
+                    break
+                }
+            }
+        }
+        
+        // If not found on main declaration, check members directly for instructions property
+        if instructionsString == nil {
+            for member in declaration.memberBlock.members {
+                // Check for instructions property
+                if let variableDecl = member.decl.as(VariableDeclSyntax.self),
+                   variableDecl.bindings.count == 1,
+                   let patternBinding = variableDecl.bindings.first,
+                   let identifier = patternBinding.pattern.as(IdentifierPatternSyntax.self),
+                   identifier.identifier.text == "instructions",
+                   let initializer = patternBinding.initializer?.value,
+                   let extractedInstructions = extractStringLiteral(initializer) {
+                    instructionsString = extractedInstructions
+                    break
+                }
+                
+                // Check for @ToolInstructions on struct declarations
+                if let structDecl = member.decl.as(StructDeclSyntax.self) {
+                    for attribute in structDecl.attributes {
+                        if let attributeSyntax = attribute.as(AttributeSyntax.self),
+                           let identifier = attributeSyntax.attributeName.as(IdentifierTypeSyntax.self),
+                           identifier.name.text == "ToolInstructions" {
+                            
+                            // Extract the instructions string parameter
+                            if let arguments = attributeSyntax.arguments?.as(LabeledExprListSyntax.self),
+                               arguments.count >= 1,
+                               let extractedInstructions = extractStringLiteral(arguments.first!.expression) {
+                                instructionsString = extractedInstructions
+                                break
+                            }
+                        }
+                    }
+                    if instructionsString != nil {
+                        break
+                    }
+                }
+            }
+        }
+        
         // Generate argument descriptors based on nested structs
         var argumentDescriptors: [String] = []
         var exampleArguments: [String] = []
@@ -161,10 +218,20 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
         let argumentsArray = argumentDescriptors.isEmpty ? "[]" : "[\(argumentDescriptors.joined(separator: ", "))]"
         let exampleArgumentsDict = exampleArguments.isEmpty ? "[:]" : "[\(exampleArguments.joined(separator: ", "))]"
         
+        // Create the ToolDefinition with instructions if available
+        let toolDefinitionCode: String
+        if let instructions = instructionsString {
+            // Create a multiline string literal for instructions
+            let instructionsLiteral = "\"\"\"" + "\n" + instructions + "\n" + "\"\"\""
+            toolDefinitionCode = "ToolDefinition(name: \"\(nameString)\", description: \"\(descString)\", instructions: \(instructionsLiteral))"
+        } else {
+            toolDefinitionCode = "ToolDefinition(name: \"\(nameString)\", description: \"\(descString)\")"
+        }
+        
         let extensionDecl = try ExtensionDeclSyntax("""
             extension \(type.trimmed): ToolProtocol {
                 public static var definition: ToolDefinition {
-                    ToolDefinition(name: \(literal: nameString), description: \(literal: descString))
+                    \(raw: toolDefinitionCode)
                 }
                 
                 public static var toolDescriptor: ToolDescriptor {
@@ -185,11 +252,18 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
     }
     
     private static func extractStringLiteral(_ expr: ExprSyntax) -> String? {
-        guard let stringLiteral = expr.as(StringLiteralExprSyntax.self),
-              let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self) else {
+        guard let stringLiteral = expr.as(StringLiteralExprSyntax.self) else {
             return nil
         }
-        return segment.content.text
+        
+        // Handle multiline strings by concatenating all segments
+        var result = ""
+        for segment in stringLiteral.segments {
+            if let stringSegment = segment.as(StringSegmentSyntax.self) {
+                result += stringSegment.content.text
+            }
+        }
+        return result.isEmpty ? nil : result
     }
 }
 

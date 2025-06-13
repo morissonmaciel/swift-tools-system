@@ -817,7 +817,7 @@ let jsonString = """
 """
 
 // 3. Decode and execute
-let response = try JSONDecoder().decode(APIToolResponse.self, from: jsonData)
+let response = try JSONDecoder().decode(ToolResponse.self, from: jsonData)
 if let tool = response.tool {
     let result = try await registry.handleTool(tool)
     print("Result: \(result)")

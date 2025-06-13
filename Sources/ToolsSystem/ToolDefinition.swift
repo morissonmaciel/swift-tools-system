@@ -7,17 +7,18 @@
 
 import Foundation
 
-/// Defines metadata for a tool including its name and description.
+/// Defines metadata for a tool including its name, description, and usage instructions.
 ///
 /// `ToolDefinition` contains the essential information needed to identify and describe
-/// a tool's purpose. This is typically generated automatically by the `@Tool` macro
+/// a tool's purpose and usage. This is typically generated automatically by the `@Tool` macro
 /// but can also be created manually for custom implementations.
 ///
 /// Example:
 /// ```swift
 /// let definition = ToolDefinition(
-///     name: "calculate_sum", 
-///     description: "Calculates the sum of two numbers"
+///     name: "calculate_sum",
+///     description: "Calculates the sum of two numbers",
+///     instructions: "Provide two numeric values as input parameters"
 /// )
 /// ```
 public struct ToolDefinition: Codable, Sendable {
@@ -33,13 +34,22 @@ public struct ToolDefinition: Codable, Sendable {
     /// to help users understand when and how to use it.
     public let description: String
     
-    /// Creates a new tool definition with the specified name and description.
+    /// Detailed usage instructions for the tool.
+    ///
+    /// This string contains specific instructions on how to use the tool effectively,
+    /// including parameter requirements, expected inputs, and any special considerations.
+    /// If no instructions are provided, this defaults to an empty string.
+    public let instructions: String
+    
+    /// Creates a new tool definition with the specified name, description, and instructions.
     ///
     /// - Parameters:
     ///   - name: The unique identifier name for the tool
     ///   - description: A human-readable description of the tool's functionality
-    public init(name: String, description: String) {
+    ///   - instructions: Detailed usage instructions for the tool (defaults to empty string)
+    public init(name: String, description: String, instructions: String = "") {
         self.name = name
         self.description = description
+        self.instructions = instructions
     }
 }

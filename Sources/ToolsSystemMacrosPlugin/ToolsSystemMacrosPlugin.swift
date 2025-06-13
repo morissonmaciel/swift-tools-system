@@ -6,6 +6,7 @@ struct ToolsSystemMacrosPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         ToolMacro.self,
         ToolArgumentMacro.self,
+        ToolInstructionsMacro.self,
         RequiredMacro.self,
     ]
 }
