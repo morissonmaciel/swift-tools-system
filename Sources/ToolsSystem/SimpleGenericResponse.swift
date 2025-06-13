@@ -8,7 +8,7 @@
 import Foundation
 
 /// A simple, reliable response structure for your use case
-public struct ToolResponse: Codable {
+public struct ToolResponse: Codable, Sendable {
     public let message: String
     public let tool: ToolCall?
     
@@ -19,7 +19,7 @@ public struct ToolResponse: Codable {
 }
 
 /// Represents a tool call from your API with arguments
-public struct ToolCall: Codable {
+public struct ToolCall: Codable, Sendable {
     public let tool_name: String
     public let arguments: [String: CodableValue]
     
@@ -195,7 +195,7 @@ public class ToolRegistry {
 
 public typealias ToolHandler = (ToolCall) async throws -> String
 
-public enum ToolRegistryError: Error, LocalizedError {
+public enum ToolRegistryError: Error, LocalizedError, Sendable {
     case unknownTool(String)
     case executionFailed(String)
     
