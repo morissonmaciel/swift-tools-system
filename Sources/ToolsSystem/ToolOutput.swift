@@ -22,6 +22,7 @@ import Foundation
 ///     return .bool(true)                       // Boolean result
 ///     return .array(["item1", 2, true])        // Mixed array
 ///     return .dictionary(["name": "John", "age": 30]) // Structured data
+///     return .dictionaryArray([["id": 1, "name": "John"], ["id": 2, "name": "Jane"]]) // Array of objects
 /// }
 /// ```
 public enum ToolOutput {
@@ -52,6 +53,13 @@ public enum ToolOutput {
     /// this provides a pretty-printed JSON representation for easy reading.
     /// This is useful for returning structured objects and complex data.
     case dictionary([String: any Codable])
+    
+    /// An array of dictionaries containing structured key-value data.
+    ///
+    /// Each dictionary's values can be any codable type. When accessed via `description`,
+    /// this provides a pretty-printed JSON array representation for easy reading.
+    /// This is useful for returning lists of structured objects and collections of data.
+    case dictionaryArray([[String: any Codable]])
 }
 
 // Helper enum for encoding mixed-type values in dictionaries
@@ -171,6 +179,30 @@ extension ToolOutput: Codable {
                 }
             }
             self = .dictionary(dictionary)
+        case "dictionaryArray":
+            let arrayContainer = try container.nestedUnkeyedContainer(forKey: .value)
+            var dictionaries: [[String: any Codable]] = []
+            var mutableContainer = arrayContainer
+            
+            while !mutableContainer.isAtEnd {
+                let dictContainer = try mutableContainer.nestedContainer(keyedBy: DynamicKey.self)
+                var dictionary: [String: any Codable] = [:]
+                
+                for key in dictContainer.allKeys {
+                    // Try decoding in a specific order: bool first, then int, then double, then string
+                    if let boolValue = try? dictContainer.decode(Bool.self, forKey: key) {
+                        dictionary[key.stringValue] = boolValue
+                    } else if let intValue = try? dictContainer.decode(Int.self, forKey: key) {
+                        dictionary[key.stringValue] = intValue
+                    } else if let doubleValue = try? dictContainer.decode(Double.self, forKey: key) {
+                        dictionary[key.stringValue] = doubleValue
+                    } else if let stringValue = try? dictContainer.decode(String.self, forKey: key) {
+                        dictionary[key.stringValue] = stringValue
+                    }
+                }
+                dictionaries.append(dictionary)
+            }
+            self = .dictionaryArray(dictionaries)
         default:
             throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unknown ToolOutput type: \(type)"))
         }
@@ -228,6 +260,27 @@ extension ToolOutput: Codable {
                 }
                 // Skip types that can't be encoded
             }
+        case .dictionaryArray(let value):
+            try container.encode("dictionaryArray", forKey: .type)
+            var arrayContainer = container.nestedUnkeyedContainer(forKey: .value)
+            
+            for dictionary in value {
+                var dictContainer = arrayContainer.nestedContainer(keyedBy: DynamicKey.self)
+                
+                for (key, element) in dictionary {
+                    let codingKey = DynamicKey(stringValue: key)!
+                    if let stringValue = element as? String {
+                        try dictContainer.encode(stringValue, forKey: codingKey)
+                    } else if let doubleValue = element as? Double {
+                        try dictContainer.encode(doubleValue, forKey: codingKey)
+                    } else if let intValue = element as? Int {
+                        try dictContainer.encode(intValue, forKey: codingKey)
+                    } else if let boolValue = element as? Bool {
+                        try dictContainer.encode(boolValue, forKey: codingKey)
+                    }
+                    // Skip types that can't be encoded
+                }
+            }
         }
     }
 }
@@ -253,6 +306,8 @@ extension ToolOutput: CustomStringConvertible {
             return "[\(value.map { String(describing: $0) }.joined(separator: ", "))]"
         case .dictionary(let value):
             return prettyJSONString(from: value)
+        case .dictionaryArray(let value):
+            return prettyJSONArrayString(from: value)
         }
     }
     
@@ -281,6 +336,36 @@ extension ToolOutput: CustomStringConvertible {
             return String(data: jsonData, encoding: .utf8) ?? "Failed to format JSON"
         } catch {
             return "Error formatting JSON: \(error.localizedDescription)"
+        }
+    }
+    
+    /// Converts an array of dictionaries to a pretty-printed JSON array string.
+    private func prettyJSONArrayString(from dictionaries: [[String: any Codable]]) -> String {
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
+            
+            // Convert to an array of simple encodable dictionaries
+            let encodableDictArray = dictionaries.map { dictionary in
+                dictionary.compactMapValues { value -> AnyCodableValue? in
+                    if let stringValue = value as? String {
+                        return .string(stringValue)
+                    } else if let intValue = value as? Int {
+                        return .int(intValue)
+                    } else if let doubleValue = value as? Double {
+                        return .double(doubleValue)
+                    } else if let boolValue = value as? Bool {
+                        return .bool(boolValue)
+                    } else {
+                        return .string(String(describing: value))
+                    }
+                }
+            }
+            
+            let jsonData = try encoder.encode(encodableDictArray)
+            return String(data: jsonData, encoding: .utf8) ?? "Failed to format JSON array"
+        } catch {
+            return "Error formatting JSON array: \(error.localizedDescription)"
         }
     }
 }

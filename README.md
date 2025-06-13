@@ -433,12 +433,13 @@ return .int(42)
 return .bool(true)
 return .array(["mixed", 123, true, 45.67])
 return .dictionary(["name": "John", "age": 30, "active": true])
+return .dictionaryArray([["id": 1, "name": "Alice"], ["id": 2, "name": "Bob"]])
 return .data(binaryData)
 ```
 
-### Dictionary Output with Pretty JSON
+### Dictionary and Dictionary Array Output with Pretty JSON
 
-The `.dictionary` case provides structured key-value data with automatic pretty-printing:
+The `.dictionary` and `.dictionaryArray` cases provide structured key-value data with automatic pretty-printing:
 
 ```swift
 @Tool("user_info", "Get user information")
@@ -479,6 +480,59 @@ print(result.description)
 // }
 //
 // Note: URLs are not escaped (https://example.com, not https:\/\/example.com)
+
+// Dictionary Array Example
+@Tool("list_users", "Get list of users")
+struct UserListTool {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        return .dictionaryArray([
+            [
+                "id": 1,
+                "name": "Alice Smith",
+                "email": "alice@example.com",
+                "active": true
+            ],
+            [
+                "id": 2,
+                "name": "Bob Johnson", 
+                "email": "bob@example.com",
+                "active": false
+            ],
+            [
+                "id": 3,
+                "name": "Charlie Brown",
+                "email": "charlie@example.com", 
+                "active": true
+            ]
+        ])
+    }
+}
+
+// Usage
+let userList = UserListTool()
+let result = try await userList.call(arguments: [])
+print(result.description)
+// Outputs clean, pretty-formatted JSON array:
+// [
+//   {
+//     "active" : true,
+//     "email" : "alice@example.com",
+//     "id" : 1,
+//     "name" : "Alice Smith"
+//   },
+//   {
+//     "active" : false,
+//     "email" : "bob@example.com",
+//     "id" : 2,
+//     "name" : "Bob Johnson"
+//   },
+//   {
+//     "active" : true,
+//     "email" : "charlie@example.com",
+//     "id" : 3,
+//     "name" : "Charlie Brown"
+//   }
+// ]
 ```
 
 ## Error Handling

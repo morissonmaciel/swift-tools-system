@@ -159,3 +159,60 @@ func testToolOutputDescriptions() {
     #expect(arrayOutput.description.contains("1"))
     #expect(arrayOutput.description.contains("false"))
 }
+
+@Test("ToolOutput supports dictionaryArray type")
+func testToolOutputDictionaryArray() throws {
+    // Test creating dictionary array output
+    let dictArrayOutput = ToolOutput.dictionaryArray([
+        ["id": 1, "name": "Alice", "active": true],
+        ["id": 2, "name": "Bob", "active": false],
+        ["id": 3, "name": "Charlie", "score": 95.5]
+    ])
+    
+    // Test encoding
+    let encoder = JSONEncoder()
+    let data = try encoder.encode(dictArrayOutput)
+    
+    // Test decoding
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode(ToolOutput.self, from: data)
+    
+    if case .dictionaryArray(let decodedArray) = decoded {
+        #expect(decodedArray.count == 3)
+        #expect(decodedArray[0]["id"] as? Int == 1)
+        #expect(decodedArray[0]["name"] as? String == "Alice")
+        #expect(decodedArray[0]["active"] as? Bool == true)
+        #expect(decodedArray[1]["id"] as? Int == 2)
+        #expect(decodedArray[1]["name"] as? String == "Bob")
+        #expect(decodedArray[1]["active"] as? Bool == false)
+        #expect(decodedArray[2]["score"] as? Double == 95.5)
+    } else {
+        #expect(Bool(false), "Expected dictionaryArray case")
+    }
+}
+
+@Test("ToolOutput dictionaryArray description returns pretty JSON array")
+func testToolOutputDictionaryArrayDescription() {
+    let dictArrayOutput = ToolOutput.dictionaryArray([
+        ["id": 1, "name": "Alice", "url": "https://alice.com"],
+        ["id": 2, "name": "Bob", "url": "https://bob.com"]
+    ])
+    
+    let description = dictArrayOutput.description
+    
+    // Check that it contains JSON array structure
+    #expect(description.hasPrefix("["))
+    #expect(description.hasSuffix("]"))
+    #expect(description.contains("{"))
+    #expect(description.contains("}"))
+    #expect(description.contains("\"id\""))
+    #expect(description.contains("\"name\""))
+    #expect(description.contains("\"Alice\""))
+    #expect(description.contains("\"Bob\""))
+    
+    // Check that URLs are not escaped
+    #expect(description.contains("https://alice.com"))
+    #expect(description.contains("https://bob.com"))
+    #expect(!description.contains("https:\\/\\/alice.com"))
+    #expect(!description.contains("https:\\/\\/bob.com"))
+}
