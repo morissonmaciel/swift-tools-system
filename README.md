@@ -437,6 +437,42 @@ return .dictionaryArray([["id": 1, "name": "Alice"], ["id": 2, "name": "Bob"]])
 return .data(binaryData)
 ```
 
+### Direct Value Access with `wrappedValue`
+
+All `ToolOutput` cases provide direct access to their underlying values via the `wrappedValue` property:
+
+```swift
+@Tool("example_tool", "Demonstrates direct value access")
+struct ExampleTool {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        return .dictionary(["name": "John", "age": 30, "active": true])
+    }
+}
+
+// Usage with direct value access
+let tool = ExampleTool()
+let result = try await tool.call(arguments: [])
+
+// Direct access without pattern matching
+let dictionary = result.wrappedValue as? [String: any Codable]
+let name = dictionary?["name"] as? String  // "John"
+let age = dictionary?["age"] as? Int       // 30
+let active = dictionary?["active"] as? Bool // true
+
+// Compare with traditional pattern matching
+if case .dictionary(let dict) = result {
+    let name = dict["name"] as? String
+    // ... same but more verbose
+}
+
+// Works with all output types
+let stringOutput = ToolOutput.string("Hello")
+let stringValue = stringOutput.wrappedValue as? String // "Hello"
+
+let arrayOutput = ToolOutput.dictionaryArray([["id": 1], ["id": 2]])
+let arrayValue = arrayOutput.wrappedValue as? [[String: any Codable]]
+```
+
 ### Dictionary and Dictionary Array Output with Pretty JSON
 
 The `.dictionary` and `.dictionaryArray` cases provide structured key-value data with automatic pretty-printing:

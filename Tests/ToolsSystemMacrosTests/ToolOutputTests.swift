@@ -216,3 +216,59 @@ func testToolOutputDictionaryArrayDescription() {
     #expect(!description.contains("https:\\/\\/alice.com"))
     #expect(!description.contains("https:\\/\\/bob.com"))
 }
+
+@Test("ToolOutput wrappedValue provides direct access to underlying values")
+func testToolOutputWrappedValue() {
+    // Test string wrappedValue
+    let stringOutput = ToolOutput.string("Hello World")
+    let stringValue = stringOutput.wrappedValue as? String
+    #expect(stringValue == "Hello World")
+    
+    // Test int wrappedValue
+    let intOutput = ToolOutput.int(42)
+    let intValue = intOutput.wrappedValue as? Int
+    #expect(intValue == 42)
+    
+    // Test double wrappedValue
+    let doubleOutput = ToolOutput.double(3.14)
+    let doubleValue = doubleOutput.wrappedValue as? Double
+    #expect(doubleValue == 3.14)
+    
+    // Test bool wrappedValue
+    let boolOutput = ToolOutput.bool(true)
+    let boolValue = boolOutput.wrappedValue as? Bool
+    #expect(boolValue == true)
+    
+    // Test array wrappedValue
+    let arrayOutput = ToolOutput.array(["test", 123, false])
+    let arrayValue = arrayOutput.wrappedValue as? [any Codable]
+    #expect(arrayValue?.count == 3)
+    #expect(arrayValue?[0] as? String == "test")
+    #expect(arrayValue?[1] as? Int == 123)
+    #expect(arrayValue?[2] as? Bool == false)
+    
+    // Test dictionary wrappedValue
+    let dictOutput = ToolOutput.dictionary(["name": "John", "age": 30, "active": true])
+    let dictValue = dictOutput.wrappedValue as? [String: any Codable]
+    #expect(dictValue?["name"] as? String == "John")
+    #expect(dictValue?["age"] as? Int == 30)
+    #expect(dictValue?["active"] as? Bool == true)
+    
+    // Test dictionaryArray wrappedValue
+    let dictArrayOutput = ToolOutput.dictionaryArray([
+        ["id": 1, "name": "Alice"],
+        ["id": 2, "name": "Bob"]
+    ])
+    let dictArrayValue = dictArrayOutput.wrappedValue as? [[String: any Codable]]
+    #expect(dictArrayValue?.count == 2)
+    #expect(dictArrayValue?[0]["id"] as? Int == 1)
+    #expect(dictArrayValue?[0]["name"] as? String == "Alice")
+    #expect(dictArrayValue?[1]["id"] as? Int == 2)
+    #expect(dictArrayValue?[1]["name"] as? String == "Bob")
+    
+    // Test data wrappedValue
+    let testData = "Hello".data(using: .utf8)!
+    let dataOutput = ToolOutput.data(testData)
+    let dataValue = dataOutput.wrappedValue as? Data
+    #expect(dataValue == testData)
+}

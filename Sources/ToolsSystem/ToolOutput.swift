@@ -285,6 +285,42 @@ extension ToolOutput: Codable {
     }
 }
 
+extension ToolOutput {
+    /// Direct access to the wrapped value of the ToolOutput case.
+    ///
+    /// This property provides convenient access to the underlying value without
+    /// having to pattern match on the enum case.
+    ///
+    /// Example usage:
+    /// ```swift
+    /// let output = ToolOutput.string("Hello")
+    /// let value = output.wrappedValue as? String // "Hello"
+    /// 
+    /// let dictOutput = ToolOutput.dictionary(["name": "John", "age": 30])
+    /// let dict = dictOutput.wrappedValue as? [String: any Codable]
+    /// ```
+    public var wrappedValue: Any {
+        switch self {
+        case .string(let value):
+            return value
+        case .double(let value):
+            return value
+        case .int(let value):
+            return value
+        case .bool(let value):
+            return value
+        case .data(let value):
+            return value
+        case .array(let value):
+            return value
+        case .dictionary(let value):
+            return value
+        case .dictionaryArray(let value):
+            return value
+        }
+    }
+}
+
 extension ToolOutput: CustomStringConvertible {
     /// A human-readable description of the tool output.
     ///
