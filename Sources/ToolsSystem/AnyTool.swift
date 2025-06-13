@@ -33,11 +33,13 @@ public struct AnyTool: Sendable {
     
     private let _definition: ToolDefinition
     private let _call: @Sendable ([any ToolArgumentProtocol]) async throws -> ToolOutput
+    private let _wrappedTool: (any ToolProtocol)?
     
     /// Creates a type-erased wrapper around any tool.
     /// - Parameter tool: The tool to wrap
     public init<T: ToolProtocol>(_ tool: T) {
         self._definition = T.definition
+        self._wrappedTool = tool
         self._call = { arguments in
             // Cast the arguments to the expected type for the wrapped tool
             let typedArgs = arguments.compactMap { $0 as? T.Argument }
@@ -48,6 +50,11 @@ public struct AnyTool: Sendable {
     /// The tool's definition and metadata.
     public var definition: ToolDefinition {
         return _definition
+    }
+    
+    /// Access to the wrapped tool instance (if available).
+    public var wrappedTool: (any ToolProtocol)? {
+        return _wrappedTool
     }
     
     /// Executes the wrapped tool with the provided arguments.
@@ -67,6 +74,7 @@ extension AnyTool: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self._definition = try container.decode(ToolDefinition.self, forKey: .definition)
+        self._wrappedTool = nil
         
         // Create a placeholder call function for decoded instances
         // Note: Decoded AnyTool instances cannot execute since we can't reconstruct the original tool

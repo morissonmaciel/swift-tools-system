@@ -16,6 +16,9 @@ ToolsSystemMacros enables you to build executable tools that can be integrated i
 - **JSON descriptors** for API documentation and discovery
 - **Comprehensive error handling**
 - **Full serialization support**
+- **🆕 ToolRegistry** for dynamic API response handling
+- **🆕 Required examples** for all tool arguments
+- **🆕 Enhanced type support** (String, Int, Bool, Double, Float)
 
 ## Async/Await Support
 
@@ -31,7 +34,7 @@ All tools support asynchronous execution out of the box. This enables tools to p
 ```swift
 @Tool("fetch_data", "Fetches data from a remote API")
 struct DataFetcher {
-    @ToolArgument("request", "API request configuration")
+    @ToolArgument("request", "API request configuration", example: "https://api.example.com/data")
     struct APIRequest {
         let url: String
         let timeout: TimeInterval
@@ -105,7 +108,7 @@ swift package generate-documentation
 // ✅ Public tool requires public call method and argument structs
 @Tool("my_tool", "Description")
 public struct MyTool {
-    @ToolArgument("input", "Description")
+    @ToolArgument("input", "Description", example: "sample input")
     public struct InputArg {
         public let value: String
     }
@@ -118,7 +121,7 @@ public struct MyTool {
 // ✅ Internal tool can have internal call method and argument structs
 @Tool("my_tool", "Description")
 struct MyTool {
-    @ToolArgument("input", "Description")
+    @ToolArgument("input", "Description", example: "sample input")
     struct InputArg {
         let value: String
     }
@@ -131,7 +134,7 @@ struct MyTool {
 // ❌ Incorrect - access level mismatch
 @Tool("my_tool", "Description")
 public struct MyTool {
-    @ToolArgument("input", "Description")
+    @ToolArgument("input", "Description", example: "sample input")
     struct InputArg {  // Should be public
         let value: String  // Should be public
     }
@@ -184,7 +187,7 @@ Add structured input to your tool:
 ```swift
 @Tool("calculate_square", "Calculates the square of a number")
 struct SquareCalculator {
-    @ToolArgument("number", "The number to square")
+    @ToolArgument("number", "The number to square", example: "5.0")
     struct NumberInput {
         let value: Double
     }
@@ -234,7 +237,7 @@ Create tools with complex argument structures:
 ```swift
 @Tool("format_text", "Formats text with various styling options")
 struct TextFormatter {
-    @ToolArgument("format_options", "Text formatting configuration")
+    @ToolArgument("format_options", "Text formatting configuration", example: "hello world")
     struct FormatOptions {
         @Required let text: String
         let uppercase: Bool
@@ -281,7 +284,7 @@ Handle different scenarios with various output types:
 ```swift
 @Tool("analyze_numbers", "Performs statistical analysis on a list of numbers")
 struct NumberAnalyzer {
-    @ToolArgument("dataset", "The numbers to analyze")
+    @ToolArgument("dataset", "The numbers to analyze", example: "[1,2,3,4,5]")
     struct DataSet {
         let numbers: [Double]
         let operation: String // "sum", "average", "stats", "list"
@@ -338,7 +341,7 @@ A production-ready tool with comprehensive error handling:
 ```swift
 @Tool("process_file", "Processes files with various operations")
 struct FileProcessor {
-    @ToolArgument("file_operation", "File processing configuration")
+    @ToolArgument("file_operation", "File processing configuration", example: "/path/to/file.txt")
     struct FileOperation {
         @Required let filePath: String
         @Required let operation: String // "read", "size", "exists", "info"
@@ -705,7 +708,7 @@ cannot convert value of type 'YourTool.YourArgument' to expected element type 'A
 // ✅ Correct - struct has @ToolArgument attribute
 @Tool("web_search", "Search web for results")
 struct WebSearchTool {
-    @ToolArgument("query", "Query string to search web for")  // ← Required!
+    @ToolArgument("query", "Query string to search web for", example: "latest news")  // ← Required!
     struct QueryArgument {
         var query: String
     }
@@ -777,6 +780,84 @@ swift test --parallel
 # Run tests for specific modules
 swift test --filter ToolsSystemMacrosTests
 swift test --filter ToolsSystemTests
+```
+
+## 🆕 ToolRegistry for API Response Handling
+
+The ToolRegistry enables dynamic handling of tool calls from API responses, perfect for AI systems and external integrations.
+
+### Basic Usage
+
+```swift
+import ToolsSystem
+
+// 1. Register your tool handlers at app startup
+let registry = ToolRegistry.shared
+
+registry.register(toolName: "web_search") { toolCall in
+    let query = toolCall.getString("query") ?? "default"
+    let maxResults = toolCall.get("maxResults", as: Int.self, default: 10)
+    
+    // Your implementation
+    return await performWebSearch(query: query, maxResults: maxResults)
+}
+
+// 2. Handle API responses with your exact JSON format
+let jsonString = """
+{
+  "message": "I need up to date information. Let me search on the web",
+  "tool": {
+      "arguments": {
+        "query": "latest news WWDC25",
+        "maxResults": 5
+      },
+      "tool_name": "web_search"
+    }
+}
+"""
+
+// 3. Decode and execute
+let response = try JSONDecoder().decode(APIToolResponse.self, from: jsonData)
+if let tool = response.tool {
+    let result = try await registry.handleTool(tool)
+    print("Result: \(result)")
+}
+```
+
+### Enhanced Type Support
+
+```swift
+// Multiple ways to access arguments
+toolCall.getString("query")                          // String?
+toolCall.getInt("maxResults")                        // Int?
+toolCall.getBool("includeCode")                      // Bool?
+toolCall.getDouble("score")                          // Double?
+toolCall.getFloat("ratio")                           // Float?
+
+// Generic type access
+toolCall.get("query", as: String.self)               // String?
+toolCall.get("maxResults", as: Int.self)             // Int?
+
+// Get with default values
+toolCall.get("query", as: String.self, default: "default")
+toolCall.get("maxResults", as: Int.self, default: 10)
+
+// Helper methods
+toolCall.hasArgument("query")                        // Bool
+toolCall.argumentKeys                                // [String]
+```
+
+### Error Handling
+
+```swift
+do {
+    let result = try await registry.handleTool(toolCall)
+} catch ToolRegistryError.unknownTool(let toolName) {
+    print("Unknown tool: \(toolName)")
+    print("Available tools: \(registry.registeredTools)")
+} catch ToolRegistryError.executionFailed(let reason) {
+    print("Execution failed: \(reason)")
+}
 ```
 
 ## Build Commands
