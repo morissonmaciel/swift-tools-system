@@ -37,7 +37,7 @@ struct DataFetcher {
         let timeout: TimeInterval
     }
     
-    func call(arguments: [Argument]) async throws -> ToolOutput {
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
         let request = try arguments.decode(APIRequest.self)
         
         // Perform async network request
@@ -97,6 +97,28 @@ swift build -c release
 swift package generate-documentation
 ```
 
+## Implementation Requirements
+
+⚠️ **Important**: When implementing tools, the `call` method **must** be declared as `public` to satisfy the `ToolProtocol` requirements.
+
+```swift
+// ✅ Correct - public call method
+@Tool("my_tool", "Description")
+struct MyTool {
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
+        // Implementation
+    }
+}
+
+// ❌ Incorrect - missing public modifier
+@Tool("my_tool", "Description")  
+struct MyTool {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        // This will cause compilation errors
+    }
+}
+```
+
 ## Progressive Usage Guide
 
 ### Level 1: Basic Tool (No Arguments)
@@ -108,7 +130,7 @@ import ToolsSystemMacros
 
 @Tool("greet", "Returns a friendly greeting")
 struct GreetingTool {
-    func call(arguments: [Argument]) async throws -> ToolOutput {
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
         return .string("Hello! 👋")
     }
 }
@@ -144,7 +166,7 @@ struct SquareCalculator {
         let value: Double
     }
     
-    func call(arguments: [Argument]) async throws -> ToolOutput {
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
         let input = try arguments.decode(NumberInput.self)
         let result = input.value * input.value
         return .double(result)
@@ -176,7 +198,7 @@ struct TextFormatter {
         let maxLength: Int?
     }
     
-    func call(arguments: [Argument]) async throws -> ToolOutput {
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
         let options = try arguments.decode(FormatOptions.self)
         
         var result = options.text
@@ -221,7 +243,7 @@ struct NumberAnalyzer {
         let operation: String // "sum", "average", "stats", "list"
     }
     
-    func call(arguments: [Argument]) async throws -> ToolOutput {
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
         let data = try arguments.decode(DataSet.self)
         
         guard !data.numbers.isEmpty else {
@@ -280,7 +302,7 @@ struct FileProcessor {
         let maxSize: Int? // Maximum file size to process
     }
     
-    func call(arguments: [Argument]) async throws -> ToolOutput {
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
         let operation = try arguments.decode(FileOperation.self)
         let url = URL(fileURLWithPath: operation.filePath)
         
@@ -412,6 +434,52 @@ func call(arguments: [Argument]) async throws -> ToolOutput {
     // ... async tool logic
     let result = await performAsyncOperation(input)
     return .string(result)
+}
+```
+
+## Troubleshooting
+
+### Type Conversion Errors
+
+If you see an error like:
+```
+cannot convert value of type 'YourTool.YourArgument' to expected element type 'Array<YourTool.Argument>.ArrayLiteralElement' (aka 'EmptyArgument')
+```
+
+**Solution**: Make sure your argument struct has the `@ToolArgument` attribute:
+
+```swift
+// ✅ Correct - struct has @ToolArgument attribute
+@Tool("web_search", "Search web for results")
+struct WebSearchTool {
+    @ToolArgument("query", "Query string to search web for")  // ← Required!
+    struct QueryArgument {
+        var query: String
+    }
+    
+    public func call(arguments: [Argument]) async throws -> ToolOutput {
+        let args = try arguments.decode(QueryArgument.self)
+        // ... implementation
+    }
+}
+
+// ❌ Incorrect - missing @ToolArgument attribute
+@Tool("web_search", "Search web for results")
+struct WebSearchTool {
+    struct QueryArgument {  // ← Missing @ToolArgument attribute
+        var query: String
+    }
+    // This will cause type conversion errors
+}
+```
+
+### Public Method Requirement
+
+The `call` method must be `public` to conform to `ToolProtocol`. Add `public` to the method declaration:
+
+```swift
+public func call(arguments: [Argument]) async throws -> ToolOutput {
+    // Implementation
 }
 ```
 

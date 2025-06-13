@@ -37,16 +37,27 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
         // Look for nested argument structs or create a default one
         var argumentTypeAlias: TypeAliasDeclSyntax
         
-        // Check if the declaration has any nested structs that might be argument types
-        let hasInputArgument = declaration.memberBlock.members.contains { member in
+        // Check if the declaration has any nested structs with @ToolArgument
+        var argumentTypeName: String? = nil
+        for member in declaration.memberBlock.members {
             if let structDecl = member.decl.as(StructDeclSyntax.self) {
-                return structDecl.name.text == "InputArgument"
+                // Check if struct has @ToolArgument attribute
+                for attribute in structDecl.attributes {
+                    if let attributeSyntax = attribute.as(AttributeSyntax.self),
+                       let identifier = attributeSyntax.attributeName.as(IdentifierTypeSyntax.self),
+                       identifier.name.text == "ToolArgument" {
+                        argumentTypeName = structDecl.name.text
+                        break
+                    }
+                }
+                if argumentTypeName != nil {
+                    break
+                }
             }
-            return false
         }
         
-        if hasInputArgument {
-            argumentTypeAlias = try TypeAliasDeclSyntax("public typealias Argument = InputArgument")
+        if let typeName = argumentTypeName {
+            argumentTypeAlias = try TypeAliasDeclSyntax("public typealias Argument = \(raw: typeName)")
         } else {
             // Create a default empty argument type
             argumentTypeAlias = try TypeAliasDeclSyntax("public typealias Argument = EmptyArgument")
