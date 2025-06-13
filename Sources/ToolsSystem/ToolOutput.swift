@@ -54,6 +54,45 @@ public enum ToolOutput {
     case dictionary([String: any Codable])
 }
 
+// Helper enum for encoding mixed-type values in dictionaries
+private enum AnyCodableValue: Codable {
+    case string(String)
+    case int(Int)
+    case double(Double)
+    case bool(Bool)
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if let boolValue = try? container.decode(Bool.self) {
+            self = .bool(boolValue)
+        } else if let intValue = try? container.decode(Int.self) {
+            self = .int(intValue)
+        } else if let doubleValue = try? container.decode(Double.self) {
+            self = .double(doubleValue)
+        } else if let stringValue = try? container.decode(String.self) {
+            self = .string(stringValue)
+        } else {
+            throw DecodingError.typeMismatch(AnyCodableValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Cannot decode AnyCodableValue"))
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        
+        switch self {
+        case .string(let value):
+            try container.encode(value)
+        case .int(let value):
+            try container.encode(value)
+        case .double(let value):
+            try container.encode(value)
+        case .bool(let value):
+            try container.encode(value)
+        }
+    }
+}
+
 // Helper struct for dynamic dictionary keys during Codable operations
 private struct DynamicKey: CodingKey {
     var stringValue: String
@@ -220,24 +259,25 @@ extension ToolOutput: CustomStringConvertible {
     /// Converts a dictionary to a pretty-printed JSON string.
     private func prettyJSONString(from dictionary: [String: any Codable]) -> String {
         do {
-            // Convert to JSON-serializable dictionary
-            var jsonDict: [String: Any] = [:]
-            for (key, value) in dictionary {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
+            
+            // Convert to a simple encodable dictionary
+            let encodableDict = dictionary.compactMapValues { value -> AnyCodableValue? in
                 if let stringValue = value as? String {
-                    jsonDict[key] = stringValue
-                } else if let doubleValue = value as? Double {
-                    jsonDict[key] = doubleValue
+                    return .string(stringValue)
                 } else if let intValue = value as? Int {
-                    jsonDict[key] = intValue
+                    return .int(intValue)
+                } else if let doubleValue = value as? Double {
+                    return .double(doubleValue)
                 } else if let boolValue = value as? Bool {
-                    jsonDict[key] = boolValue
+                    return .bool(boolValue)
                 } else {
-                    // Fallback for other types
-                    jsonDict[key] = String(describing: value)
+                    return .string(String(describing: value))
                 }
             }
             
-            let jsonData = try JSONSerialization.data(withJSONObject: jsonDict, options: [.prettyPrinted, .sortedKeys])
+            let jsonData = try encoder.encode(encodableDict)
             return String(data: jsonData, encoding: .utf8) ?? "Failed to format JSON"
         } catch {
             return "Error formatting JSON: \(error.localizedDescription)"

@@ -108,7 +108,7 @@ func testToolOutputDictionaryDescription() {
     let dictOutput = ToolOutput.dictionary([
         "name": "Alice",
         "age": 25,
-        "skills": ["Swift", "Python"],
+        "url": "https://example.com/path",
         "available": true
     ])
     
@@ -123,6 +123,14 @@ func testToolOutputDictionaryDescription() {
     #expect(description.contains("25"))
     #expect(description.contains("\"available\""))
     #expect(description.contains("true"))
+    
+    // Check that URLs are not escaped (no backslashes before slashes)
+    #expect(description.contains("https://example.com/path"))
+    #expect(!description.contains("https:\\/\\/example.com\\/path"))
+    
+    // Check clean formatting (no extra spaces around colons)
+    #expect(description.contains("\"name\" : \"Alice\""))
+    #expect(!description.contains("\"name\":\"Alice\""))  // Should have spaces
 }
 
 @Test("ToolOutput description works for all types")

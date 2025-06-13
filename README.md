@@ -462,7 +462,7 @@ struct UserInfoTool {
 let tool = UserInfoTool()
 let result = try await tool.call(arguments: [])
 print(result.description)
-// Outputs pretty-formatted JSON:
+// Outputs clean, pretty-formatted JSON:
 // {
 //   "active" : true,
 //   "last_login" : "2024-01-15T10:30:00Z",
@@ -477,6 +477,8 @@ print(result.description)
 //   },
 //   "user" : "john_doe"
 // }
+//
+// Note: URLs are not escaped (https://example.com, not https:\/\/example.com)
 ```
 
 ## Error Handling
