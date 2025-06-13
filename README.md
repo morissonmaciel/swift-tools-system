@@ -37,7 +37,7 @@ struct DataFetcher {
         let timeout: TimeInterval
     }
     
-    public func call(arguments: [Argument]) async throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let request = try arguments.decode(APIRequest.self)
         
         // Perform async network request
@@ -99,22 +99,45 @@ swift package generate-documentation
 
 ## Implementation Requirements
 
-⚠️ **Important**: When implementing tools, the `call` method **must** be declared as `public` to satisfy the `ToolProtocol` requirements.
+⚠️ **Important**: The access level of the `call` method and `@ToolArgument` structs must match the access level of your tool struct.
 
 ```swift
-// ✅ Correct - public call method
+// ✅ Public tool requires public call method and argument structs
 @Tool("my_tool", "Description")
-struct MyTool {
+public struct MyTool {
+    @ToolArgument("input", "Description")
+    public struct InputArg {
+        public let value: String
+    }
+    
     public func call(arguments: [Argument]) async throws -> ToolOutput {
         // Implementation
     }
 }
 
-// ❌ Incorrect - missing public modifier
-@Tool("my_tool", "Description")  
+// ✅ Internal tool can have internal call method and argument structs
+@Tool("my_tool", "Description")
 struct MyTool {
+    @ToolArgument("input", "Description")
+    struct InputArg {
+        let value: String
+    }
+    
     func call(arguments: [Argument]) async throws -> ToolOutput {
-        // This will cause compilation errors
+        // Implementation - internal access is fine
+    }
+}
+
+// ❌ Incorrect - access level mismatch
+@Tool("my_tool", "Description")
+public struct MyTool {
+    @ToolArgument("input", "Description")
+    struct InputArg {  // Should be public
+        let value: String  // Should be public
+    }
+    
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        // This will cause compilation errors - all components need to be public
     }
 }
 ```
@@ -130,7 +153,7 @@ import ToolsSystemMacros
 
 @Tool("greet", "Returns a friendly greeting")
 struct GreetingTool {
-    public func call(arguments: [Argument]) async throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         return .string("Hello! 👋")
     }
 }
@@ -166,7 +189,7 @@ struct SquareCalculator {
         let value: Double
     }
     
-    public func call(arguments: [Argument]) async throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let input = try arguments.decode(NumberInput.self)
         let result = input.value * input.value
         return .double(result)
@@ -198,7 +221,7 @@ struct TextFormatter {
         let maxLength: Int?
     }
     
-    public func call(arguments: [Argument]) async throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let options = try arguments.decode(FormatOptions.self)
         
         var result = options.text
@@ -243,7 +266,7 @@ struct NumberAnalyzer {
         let operation: String // "sum", "average", "stats", "list"
     }
     
-    public func call(arguments: [Argument]) async throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let data = try arguments.decode(DataSet.self)
         
         guard !data.numbers.isEmpty else {
@@ -302,7 +325,7 @@ struct FileProcessor {
         let maxSize: Int? // Maximum file size to process
     }
     
-    public func call(arguments: [Argument]) async throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let operation = try arguments.decode(FileOperation.self)
         let url = URL(fileURLWithPath: operation.filePath)
         
@@ -409,7 +432,51 @@ return .double(3.14159)
 return .int(42)
 return .bool(true)
 return .array(["mixed", 123, true, 45.67])
+return .dictionary(["name": "John", "age": 30, "active": true])
 return .data(binaryData)
+```
+
+### Dictionary Output with Pretty JSON
+
+The `.dictionary` case provides structured key-value data with automatic pretty-printing:
+
+```swift
+@Tool("user_info", "Get user information")
+struct UserInfoTool {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        return .dictionary([
+            "user": "john_doe",
+            "profile": [
+                "name": "John Doe",
+                "age": 30,
+                "location": "San Francisco"
+            ],
+            "permissions": ["read", "write"],
+            "active": true,
+            "last_login": "2024-01-15T10:30:00Z"
+        ])
+    }
+}
+
+// Usage
+let tool = UserInfoTool()
+let result = try await tool.call(arguments: [])
+print(result.description)
+// Outputs pretty-formatted JSON:
+// {
+//   "active" : true,
+//   "last_login" : "2024-01-15T10:30:00Z",
+//   "permissions" : [
+//     "read",
+//     "write"
+//   ],
+//   "profile" : {
+//     "age" : 30,
+//     "location" : "San Francisco",
+//     "name" : "John Doe"
+//   },
+//   "user" : "john_doe"
+// }
 ```
 
 ## Error Handling
@@ -457,7 +524,7 @@ struct WebSearchTool {
         var query: String
     }
     
-    public func call(arguments: [Argument]) async throws -> ToolOutput {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
         let args = try arguments.decode(QueryArgument.self)
         // ... implementation
     }
@@ -473,13 +540,23 @@ struct WebSearchTool {
 }
 ```
 
-### Public Method Requirement
+### Access Level Requirements
 
-The `call` method must be `public` to conform to `ToolProtocol`. Add `public` to the method declaration:
+The `call` method's access level must match your tool struct's access level:
 
 ```swift
-public func call(arguments: [Argument]) async throws -> ToolOutput {
-    // Implementation
+// For public tools
+public struct MyTool {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        // Implementation
+    }
+}
+
+// For internal tools  
+struct MyTool {
+    func call(arguments: [Argument]) async throws -> ToolOutput {
+        // Implementation
+    }
 }
 ```
 

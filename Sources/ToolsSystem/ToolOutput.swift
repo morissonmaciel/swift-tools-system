@@ -14,13 +14,14 @@ import Foundation
 ///
 /// Example usage:
 /// ```swift
-/// func call(arguments: [Argument]) throws -> ToolOutput {
+/// func call(arguments: [Argument]) async throws -> ToolOutput {
 ///     // Return different types based on your tool's logic
 ///     return .string("Hello, World!")          // Text result
 ///     return .double(3.14159)                  // Numeric result
 ///     return .int(42)                          // Integer result
 ///     return .bool(true)                       // Boolean result
 ///     return .array(["item1", 2, true])        // Mixed array
+///     return .dictionary(["name": "John", "age": 30]) // Structured data
 /// }
 /// ```
 public enum ToolOutput {
@@ -44,6 +45,29 @@ public enum ToolOutput {
     /// The array can contain any combination of supported types (String, Double, Int, Bool).
     /// This is useful for returning lists or collections of data.
     case array([any Codable])
+    
+    /// A dictionary containing structured key-value data.
+    ///
+    /// The dictionary values can be any codable type. When accessed via `description`,
+    /// this provides a pretty-printed JSON representation for easy reading.
+    /// This is useful for returning structured objects and complex data.
+    case dictionary([String: any Codable])
+}
+
+// Helper struct for dynamic dictionary keys during Codable operations
+private struct DynamicKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+    
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
+    
+    init?(intValue: Int) {
+        self.stringValue = String(intValue)
+        self.intValue = intValue
+    }
 }
 
 extension ToolOutput: Codable {
@@ -91,6 +115,23 @@ extension ToolOutput: Codable {
                 }
             }
             self = .array(elements)
+        case "dictionary":
+            let dictContainer = try container.nestedContainer(keyedBy: DynamicKey.self, forKey: .value)
+            var dictionary: [String: any Codable] = [:]
+            
+            for key in dictContainer.allKeys {
+                // Try decoding in a specific order: bool first (since it's a subset of int), then int, then double, then string
+                if let boolValue = try? dictContainer.decode(Bool.self, forKey: key) {
+                    dictionary[key.stringValue] = boolValue
+                } else if let intValue = try? dictContainer.decode(Int.self, forKey: key) {
+                    dictionary[key.stringValue] = intValue
+                } else if let doubleValue = try? dictContainer.decode(Double.self, forKey: key) {
+                    dictionary[key.stringValue] = doubleValue
+                } else if let stringValue = try? dictContainer.decode(String.self, forKey: key) {
+                    dictionary[key.stringValue] = stringValue
+                }
+            }
+            self = .dictionary(dictionary)
         default:
             throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unknown ToolOutput type: \(type)"))
         }
@@ -131,6 +172,75 @@ extension ToolOutput: Codable {
                 }
                 // Skip types that can't be encoded
             }
+        case .dictionary(let value):
+            try container.encode("dictionary", forKey: .type)
+            var dictContainer = container.nestedContainer(keyedBy: DynamicKey.self, forKey: .value)
+            
+            for (key, element) in value {
+                let codingKey = DynamicKey(stringValue: key)!
+                if let stringValue = element as? String {
+                    try dictContainer.encode(stringValue, forKey: codingKey)
+                } else if let doubleValue = element as? Double {
+                    try dictContainer.encode(doubleValue, forKey: codingKey)
+                } else if let intValue = element as? Int {
+                    try dictContainer.encode(intValue, forKey: codingKey)
+                } else if let boolValue = element as? Bool {
+                    try dictContainer.encode(boolValue, forKey: codingKey)
+                }
+                // Skip types that can't be encoded
+            }
+        }
+    }
+}
+
+extension ToolOutput: CustomStringConvertible {
+    /// A human-readable description of the tool output.
+    ///
+    /// For dictionary outputs, this returns a pretty-printed JSON string.
+    /// For other output types, this returns their string representation.
+    public var description: String {
+        switch self {
+        case .string(let value):
+            return value
+        case .double(let value):
+            return String(value)
+        case .int(let value):
+            return String(value)
+        case .bool(let value):
+            return String(value)
+        case .data(let value):
+            return "Data(\(value.count) bytes)"
+        case .array(let value):
+            return "[\(value.map { String(describing: $0) }.joined(separator: ", "))]"
+        case .dictionary(let value):
+            return prettyJSONString(from: value)
+        }
+    }
+    
+    /// Converts a dictionary to a pretty-printed JSON string.
+    private func prettyJSONString(from dictionary: [String: any Codable]) -> String {
+        do {
+            // Convert to JSON-serializable dictionary
+            var jsonDict: [String: Any] = [:]
+            for (key, value) in dictionary {
+                if let stringValue = value as? String {
+                    jsonDict[key] = stringValue
+                } else if let doubleValue = value as? Double {
+                    jsonDict[key] = doubleValue
+                } else if let intValue = value as? Int {
+                    jsonDict[key] = intValue
+                } else if let boolValue = value as? Bool {
+                    jsonDict[key] = boolValue
+                } else {
+                    // Fallback for other types
+                    jsonDict[key] = String(describing: value)
+                }
+            }
+            
+            let jsonData = try JSONSerialization.data(withJSONObject: jsonDict, options: [.prettyPrinted, .sortedKeys])
+            return String(data: jsonData, encoding: .utf8) ?? "Failed to format JSON"
+        } catch {
+            return "Error formatting JSON: \(error.localizedDescription)"
         }
     }
 }
