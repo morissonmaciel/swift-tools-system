@@ -130,11 +130,11 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
         
         let extensionDecl = try ExtensionDeclSyntax("""
             extension \(type.trimmed): ToolProtocol {
-                var definition: ToolDefinition {
+                public var definition: ToolDefinition {
                     ToolDefinition(name: \(literal: nameString), description: \(literal: descString))
                 }
                 
-                var toolDescriptor: ToolDescriptor {
+                public var toolDescriptor: ToolDescriptor {
                     return ToolDescriptor(
                         name: \(literal: nameString),
                         description: \(literal: descString),
