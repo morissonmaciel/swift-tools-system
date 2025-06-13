@@ -16,7 +16,7 @@ struct WebSearchTool {
         case duckDuckGoParsingError
     }
     
-    @ToolArgument("query", "Query string to search web for")
+    @ToolArgument("query", "Query string to search web for", example: "latest news on AI")
     struct QueryArgument {
         var query: String
     }

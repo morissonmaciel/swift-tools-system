@@ -60,7 +60,7 @@ import Foundation
 @attached(extension, conformances: ToolProtocol, names: named(definition), named(toolDescriptor))
 public macro Tool(_ name: String, _ description: String) = #externalMacro(module: "ToolsSystemMacrosPlugin", type: "ToolMacro")
 
-/// Marks a struct as a tool argument with the specified name and description.
+/// Marks a struct as a tool argument with the specified name, description, and required example.
 ///
 /// The `@ToolArgument` macro generates the necessary code to make a struct conform to
 /// `ToolArgumentProtocol`, allowing it to be used as input to tool execution methods.
@@ -71,7 +71,7 @@ public macro Tool(_ name: String, _ description: String) = #externalMacro(module
 /// ```swift
 /// @Tool("file_processor", "Processes files with various options")
 /// struct FileProcessor {
-///     @ToolArgument("file_options", "File processing configuration")
+///     @ToolArgument("file_options", "File processing configuration", example: "/path/to/file.txt")
 ///     struct FileOptions {
 ///         let filePath: String
 ///         let format: String
@@ -95,9 +95,10 @@ public macro Tool(_ name: String, _ description: String) = #externalMacro(module
 /// - Parameters:
 ///   - name: A unique identifier for the argument (should be snake_case)
 ///   - description: A human-readable description of what the argument represents
+///   - example: A required example value demonstrating the expected format
 @attached(member, names: named(argumentDefinition))
 @attached(extension, conformances: ToolArgumentProtocol)
-public macro ToolArgument(_ name: String, _ description: String) = #externalMacro(module: "ToolsSystemMacrosPlugin", type: "ToolArgumentMacro")
+public macro ToolArgument(_ name: String, _ description: String, example: String) = #externalMacro(module: "ToolsSystemMacrosPlugin", type: "ToolArgumentMacro")
 
 /// Marks a property as required within a tool argument.
 ///

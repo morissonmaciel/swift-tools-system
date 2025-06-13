@@ -16,9 +16,9 @@ public struct ToolArgumentMacro: MemberMacro, ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        // Extract argument name and description
+        // Extract argument name, description, and required example
         guard let arguments = node.arguments?.as(LabeledExprListSyntax.self),
-              arguments.count >= 2 else {
+              arguments.count >= 3 else {
             throw MacroError.missingArguments
         }
         
@@ -30,8 +30,24 @@ public struct ToolArgumentMacro: MemberMacro, ExtensionMacro {
             throw MacroError.invalidArguments
         }
         
-        // Generate the definition property
-        let definition = try VariableDeclSyntax("public static var argumentDefinition: ToolArgumentDefinition { ToolArgumentDefinition(name: \(literal: nameString), description: \(literal: descString)) }")
+        // Extract required example parameter
+        var exampleString: String? = nil
+        if arguments.count >= 3 {
+            // Look for the example parameter by label
+            for argument in arguments.dropFirst(2) {
+                if let label = argument.label?.text, label == "example" {
+                    exampleString = extractStringLiteral(argument.expression)
+                    break
+                }
+            }
+        }
+        
+        guard let example = exampleString else {
+            throw MacroError.missingExample
+        }
+        
+        // Generate the definition property with required example
+        let definition = try VariableDeclSyntax("public static var argumentDefinition: ToolArgumentDefinition { ToolArgumentDefinition(name: \(literal: nameString), description: \(literal: descString), example: \(literal: example)) }")
         
         return [DeclSyntax(definition)]
     }

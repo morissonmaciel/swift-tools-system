@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Defines metadata for a tool argument including its name and description.
+/// Defines metadata for a tool argument including its name, description, and required example.
 ///
 /// `ToolArgumentDefinition` contains information about a specific argument that a tool accepts.
 /// This is typically generated automatically by the `@ToolArgument` macro but can also be
@@ -17,7 +17,8 @@ import Foundation
 /// ```swift
 /// let argDef = ToolArgumentDefinition(
 ///     name: "input_number", 
-///     description: "The number to process"
+///     description: "The number to process",
+///     example: "42"
 /// )
 /// ```
 public struct ToolArgumentDefinition: Codable {
@@ -33,13 +34,21 @@ public struct ToolArgumentDefinition: Codable {
     /// to help users understand how to provide the correct input.
     public let description: String
     
-    /// Creates a new tool argument definition with the specified name and description.
+    /// A required example value that demonstrates the expected format or content.
+    ///
+    /// This example will be included in the JSON descriptor to help users understand
+    /// how to structure their input for this argument.
+    public let example: String
+    
+    /// Creates a new tool argument definition with the specified name, description, and required example.
     ///
     /// - Parameters:
     ///   - name: The unique identifier name for the argument
     ///   - description: A human-readable description of the argument's purpose
-    public init(name: String, description: String) {
+    ///   - example: A required example value demonstrating the expected format
+    public init(name: String, description: String, example: String) {
         self.name = name
         self.description = description
+        self.example = example
     }
 }

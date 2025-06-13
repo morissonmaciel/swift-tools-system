@@ -86,6 +86,7 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
         
         // Generate argument descriptors based on nested structs
         var argumentDescriptors: [String] = []
+        var exampleArguments: [String] = []
         
         // Look for nested structs with @ToolArgument
         for member in declaration.memberBlock.members {
@@ -96,11 +97,23 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
                        let identifier = attributeSyntax.attributeName.as(IdentifierTypeSyntax.self),
                        identifier.name.text == "ToolArgument" {
                         
-                        // Extract argument name and description from @ToolArgument
+                        // Extract argument name, description, and example from @ToolArgument
                         if let arguments = attributeSyntax.arguments?.as(LabeledExprListSyntax.self),
                            arguments.count >= 2,
                            let argNameString = extractStringLiteral(arguments.first!.expression),
                            let argDescString = extractStringLiteral(arguments.dropFirst().first!.expression) {
+                            
+                            // Extract required example parameter
+                            var exampleString: String? = nil
+                            if arguments.count >= 3 {
+                                // Look for the example parameter by label
+                                for argument in arguments.dropFirst(2) {
+                                    if let label = argument.label?.text, label == "example" {
+                                        exampleString = extractStringLiteral(argument.expression)
+                                        break
+                                    }
+                                }
+                            }
                             
                             // Generate type information for this argument
                             // For now, we'll infer the type from the first property
@@ -131,6 +144,14 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
                             }
                             
                             argumentDescriptors.append("ArgumentDescriptor(name: \"\(argNameString)\", description: \"\(argDescString)\", type: ArgumentTypeDescriptor(type: \"\(argumentType)\"))")
+                            
+                            // Add example to arguments (now required)
+                            if let example = exampleString {
+                                exampleArguments.append("\"\(argNameString)\": AnyCodable(\"\(example)\")")
+                            } else {
+                                // This should not happen with required examples, but handle gracefully
+                                exampleArguments.append("\"\(argNameString)\": AnyCodable(\"example value\")")
+                            }
                         }
                     }
                 }
@@ -138,6 +159,7 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
         }
         
         let argumentsArray = argumentDescriptors.isEmpty ? "[]" : "[\(argumentDescriptors.joined(separator: ", "))]"
+        let exampleArgumentsDict = exampleArguments.isEmpty ? "[:]" : "[\(exampleArguments.joined(separator: ", "))]"
         
         let extensionDecl = try ExtensionDeclSyntax("""
             extension \(type.trimmed): ToolProtocol {
@@ -148,7 +170,7 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
                 public static var toolDescriptor: ToolDescriptor {
                     let example = ToolExample(
                         toolName: \(literal: nameString),
-                        arguments: [:]
+                        arguments: \(raw: exampleArgumentsDict)
                     )
                     return ToolDescriptor(
                         toolName: \(literal: nameString),
@@ -174,6 +196,7 @@ public struct ToolMacro: MemberMacro, ExtensionMacro {
 enum MacroError: Error, CustomStringConvertible {
     case missingArguments
     case invalidArguments
+    case missingExample
     
     var description: String {
         switch self {
@@ -181,6 +204,8 @@ enum MacroError: Error, CustomStringConvertible {
             return "Missing arguments"
         case .invalidArguments:
             return "Invalid arguments"
+        case .missingExample:
+            return "Missing required example parameter"
         }
     }
 }

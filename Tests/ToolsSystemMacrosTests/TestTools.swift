@@ -23,7 +23,7 @@ struct TestTool: Sendable {
 @Tool("calculate_square_root", "Calculates the square root of a number")
 struct CalcSquareRoot: Sendable {
     
-    @ToolArgument("input", "The number to calculate the square root of")
+    @ToolArgument("input", "The number to calculate the square root of", example: "16.0")
     struct InputArgument: Sendable {
         var number: Double
     }
